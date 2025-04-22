@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const productSchema = new mongoose.Schema({
     category: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: [true, 'Category is required'] },
+    gender: { type: mongoose.Schema.Types.ObjectId, ref: 'Gender', required: [true, 'Gender is required'] },
     productName: {
         type: String,
         required: true,
