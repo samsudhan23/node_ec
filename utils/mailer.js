@@ -28,4 +28,5 @@ const sendOTPEmail = async (to, content, subject = 'Your OTP Code', isOtp = true
 //     })
 // }
 
+
 module.exports = sendOTPEmail;
