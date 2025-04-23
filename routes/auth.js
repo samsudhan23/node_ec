@@ -5,6 +5,7 @@ const bcrypt = require('bcrypt')
 const Users = require('../model/User');
 const sendOTPMail = require('../utils/mailer');
 const Otp = require('../model/Otp');
+const crypto = require('crypto');
 // const sendOtpSms = require('../utils/sendSms');
 
 router.post("/auth/send-otp", async (req, res) => {
@@ -87,5 +88,55 @@ router.post("/auth/login", async (req, res) => {
     }
 })
 
+// POST: Request reset
+router.post('/auth/forgot-password', async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        const user = await Users.findOne({ email });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        const token = crypto.randomBytes(20).toString('hex');
+
+        user.resetToken = token;
+        user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
+        await user.save();
+
+        const resetUrl = `http://localhost:4200/reset-password/${token}`;
+        const html = `<p>Click the link below to reset your password:</p><a href="${resetUrl}">${resetUrl}</a>`;
+
+        await sendOTPMail(user.email, html, 'Reset Password', false);
+        res.status(200).json({ message: 'Reset link sent to your email' });
+
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+router.post('/auth/reset-password/:token', async (req, res) => {
+    const { token } = req.params;
+    const { newPassword } = req.body;
+
+    try {
+        const user = await Users.findOne({
+            resetToken: token,
+            resetTokenExpiry: { $gt: Date.now() }
+        });
+
+        if (!user) return res.status(400).json({ message: 'Invalid or expired token' });
+
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        user.password = hashedPassword;
+        user.resetToken = undefined;
+        user.resetTokenExpiry = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Password reset successfully' });
+
+    } catch (err) {
+        res.status(500).json({ message: 'Server error' });
+    }
+});
 
 module.exports = router;
