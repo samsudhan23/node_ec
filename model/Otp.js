@@ -9,6 +9,9 @@ const OtpSchema = new mongoose.Schema({
         type: String,
         required: true
     },
+    otpExpiry: {
+        type: Date
+    },
     createdAt: {
         type: Date,
         default: Date.now,

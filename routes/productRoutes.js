@@ -47,7 +47,7 @@ router.put('/updateProducts/:id', async (req, res) => {
         req.body.slug = slugify(productName, { lower: true })
         const updateProducts = await Products.findByIdAndUpdate(req.params.id, {
             $set: req.body
-        });
+        }, { new: true }); //this returns the updated document
 
         return res.status(200).json({ result: updateProducts, code: 200, success: true, message: 'Product Updated successfully', })
     }
