@@ -37,7 +37,6 @@ const UserSchema = new mongoose.Schema({
   },
   dateOfBirth:{
     type:Date,
-    required: [true, 'Date of Birth is required'],
   }
 }, { timestamps: true })
 
