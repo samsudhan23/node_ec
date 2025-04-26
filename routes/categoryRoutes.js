@@ -11,11 +11,11 @@ router.post('/gender', async (req, res) => {
         const slug = slugify(genderName, { lower: true });
         const uniqName = await Gender.findOne({ slug })
         if (uniqName) {
-            return res.status(404).json({ message: 'Gender already exists' })
+            return res.status(404).json({ message: 'Gender already exists', result: [] })
         }
         const newGender = new Gender({ genderName, slug })
         await newGender.save();
-        return res.status(200).json({ message: 'Gender created succesfully', result: newGender })
+        return res.status(200).json({ message: 'Gender created succesfully', result: newGender, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).res.json({ message: 'Server Error' })
@@ -25,7 +25,7 @@ router.post('/gender', async (req, res) => {
 router.get('/genderList', async (req, res) => {
     try {
         const getList = await Gender.find();
-        return res.status(200).json({ result: getList })
+        return res.status(200).json({ result: getList, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).res.json({ message: 'Server Error' })
@@ -46,13 +46,38 @@ router.post('/categories', async (req, res) => {
         }
         const newCategory = new Category({ categoryName, slug, categoryDescription })
         await newCategory.save();
-        return res.status(200).json({ message: 'Category created succesfully', result: newCategory })
+        return res.status(200).json({ message: 'Category created succesfully', result: newCategory, code: 200, success: true, })
     }
     catch (err) {
         res.status(500).json({ message: 'Server Error' })
     }
+})
 
+// Category List
+router.get('/getCategories', async (req, res) => {
+    try {
+        const categoryList = await Category.find();
+        return res.status(200).json({ code: 200, success: true, result: categoryList })
+    }
+    catch (err) {
+        return res.status(500).json({ message: 'Server Error' })
+    }
+})
 
+/** Delete Category */
+router.delete('/deleteCategory/:id', async (req, res) => {
+    try {
+        const category = await Category.findById(req.params.id);
+        if (!category) {
+            return res.status(404).json({ message: "Category doesn't exists", result: [] })
+        }
+        await Category.findByIdAndDelete(category);
+
+        return res.status(200).json({ code: 200, success: true, message: 'Category Deleted successfully', })
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
 })
 
 module.exports = router;
