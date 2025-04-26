@@ -111,7 +111,15 @@ router.delete('/deleteProducts/:id', async (req, res) => {
 router.get('/getProducts', async (req, res) => {
     try {
         const products = await Products.find().populate('category').populate('gender')
-        return res.status(200).json({ result: products, code: 200, success: true })
+        const hostURL = 'http://localhost:5000/assets/Products';
+        const updatedProducts = products.map(item => {
+            return {
+                ...item._doc,
+                images: item.images ? hostURL + item.images : null,
+                gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
+            }
+        })
+        return res.status(200).json({ result: updatedProducts, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' });
