@@ -82,6 +82,13 @@ router.put('/updateProducts/:id', async (req, res) => {
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         req.body.slug = slugify(productName, { lower: true })
+        // if (req.files && req.files['images'] && req.files['images'][0]) {
+        //     console.log('req.files: ', req.files);
+        //     req.body.images = req.files['images'][0].filename;
+        // }
+        // if (req.files && req.files['gallery']) {
+        //     req.body.gallery = req.files['gallery'].map(file => file.filename);
+        // }
         const updateProducts = await Products.findByIdAndUpdate(req.params.id, {
             $set: req.body
         }, { new: true }); //this returns the updated document
@@ -111,7 +118,7 @@ router.delete('/deleteProducts/:id', async (req, res) => {
 router.get('/getProducts', async (req, res) => {
     try {
         const products = await Products.find().populate('category').populate('gender')
-        const hostURL = 'http://localhost:5000/assets/Products';
+        const hostURL = 'http://localhost:5000/assets/Products/';
         const updatedProducts = products.map(item => {
             return {
                 ...item._doc,

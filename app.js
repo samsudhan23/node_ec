@@ -3,6 +3,8 @@ const cors = require('cors')
 const bodyParser = require('body-parser')
 const dotenv = require("dotenv");
 const connectDB = require('./config/db')
+const path = require("path");
+
 
 // Import Routes
 const routes = require('./routes/auth');
@@ -18,6 +20,9 @@ app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
+// Image decleare statically
+const folderLocation = path.join(__dirname, "assets/Products");
+app.use("/assets/Products", express.static(folderLocation))
 
 // Routes
 app.use('/api', routes);
