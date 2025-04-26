@@ -37,6 +37,7 @@ router.post('/products', uploadFiles.fields([
     try {
         // Check Category(Validation)
         if (!category || category.trim() === '') {
+            deleteUploadedFiles(req.files);
             return res.status(400).json({ message: 'Category is required' });
         }
         // Set Unique Slug name
@@ -74,21 +75,38 @@ router.post('/products', uploadFiles.fields([
 });
 
 /* update product */
-router.put('/updateProducts/:id', async (req, res) => {
+router.put('/updateProducts/:id', uploadFiles.fields([
+    { name: 'images', maxCount: 1 },
+    { name: 'gallery', maxCount: 5 }
+]), async (req, res) => {
     const { productName } = req.body;
     try {
         const products = await Products.findById(req.params.id);
         if (!products) {
+            deleteUploadedFiles(req.files)
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         req.body.slug = slugify(productName, { lower: true })
-        // if (req.files && req.files['images'] && req.files['images'][0]) {
-        //     console.log('req.files: ', req.files);
-        //     req.body.images = req.files['images'][0].filename;
-        // }
-        // if (req.files && req.files['gallery']) {
-        //     req.body.gallery = req.files['gallery'].map(file => file.filename);
-        // }
+        if (req.files && req.files['images'] && req.files['images'][0]) {
+            if (products.images) {
+                const oldPath = path.join(__dirname, '../assets/Products', products.images);
+                if (fs.existsSync(oldPath)) {
+                    fs.unlinkSync(oldPath);
+                }
+                req.body.images = req.files['images'][0].filename;
+            }
+        }
+        if (req.files && req.files['gallery']) {
+            if (products.gallery && products.gallery.length > 0) {
+                products.gallery.forEach(oldImage => {
+                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                });
+            }
+            req.body.gallery = req.files['gallery'].map(file => file.filename);
+        }
         const updateProducts = await Products.findByIdAndUpdate(req.params.id, {
             $set: req.body
         }, { new: true }); //this returns the updated document
@@ -96,6 +114,7 @@ router.put('/updateProducts/:id', async (req, res) => {
         return res.status(200).json({ result: updateProducts, code: 200, success: true, message: 'Product Updated successfully', })
     }
     catch (error) {
+        deleteUploadedFiles(req.files)
         res.status(500).json({ message: 'Server Error' });
     }
 })
@@ -103,11 +122,26 @@ router.put('/updateProducts/:id', async (req, res) => {
 router.delete('/deleteProducts/:id', async (req, res) => {
     try {
         const products = await Products.findById(req.params.id);
+        console.log('products: ', products);
         if (!products) {
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         await Products.findByIdAndDelete(req.params.id);
-
+        if (products.images) {
+            const oldPath = path.join(__dirname, '../assets/Products', products.images);
+            if (fs.existsSync(oldPath)) {
+                fs.unlinkSync(oldPath);
+            }
+            // req.body.images = req.files['images'][0].filename;
+        }
+        if (products.gallery && products.gallery.length > 0) {
+            products.gallery.forEach(oldImage => {
+                const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            });
+        }
         return res.status(200).json({ code: 200, success: true, message: 'Product Deleted successfully', })
     }
     catch (error) {
@@ -134,17 +168,17 @@ router.get('/getProducts', async (req, res) => {
 })
 
 /* get single product */
-router.get('/products/:id', async (req, res) => {
-    try {
-        const products = await Products.findById(req.params.id);
-        if (!products) {
-            return res.status(404).json({ message: "Product doesn't exists" })
-        }
-        return res.status(200).json({ result: products, code: 200, success: true })
-    }
-    catch (error) {
-        res.status(500).json({ message: 'Server Error' });
-    }
-})
+// router.get('/products/:id', async (req, res) => {
+//     try {
+//         const products = await Products.findById(req.params.id);
+//         if (!products) {
+//             return res.status(404).json({ message: "Product doesn't exists" })
+//         }
+//         return res.status(200).json({ result: products, code: 200, success: true })
+//     }
+//     catch (error) {
+//         res.status(500).json({ message: 'Server Error' });
+//     }
+// })
 
 module.exports = router;
