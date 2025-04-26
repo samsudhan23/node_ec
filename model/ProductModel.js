@@ -8,9 +8,7 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     productDescription: String,
-    imageUrl: { type: String, required: true },
-    imageName: { type: String, required: true },
-    imageType: { type: String, required: true },
+    images: { type: String, required: true },
     price: {
         type: Number,
         required: true,
@@ -18,13 +16,7 @@ const productSchema = new mongoose.Schema({
     discountPrice: Number,
     slug: { type: String, unique: true },
     gallery: {
-        type: [
-            {
-                imageUrl: { type: String, required: true },
-                imageName: { type: String, required: true },
-                imageType: { type: String, required: true }
-            }
-        ],
+        type: [String],
         required: [true, 'Gallery is required'],
         validate: {
             validator: function (value) {

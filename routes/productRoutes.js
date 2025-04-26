@@ -2,9 +2,37 @@ const express = require('express');
 const router = express.Router();
 const Products = require('../model/ProductModel')
 const slugify = require('slugify');
+const path = require('path');
+const fs = require('fs');
+const uploadFiles = require('../utils/multer');
+
+// Helper function to delete uploaded files
+const deleteUploadedFiles = (files) => {
+    if (files) {
+        if (files['images']) {
+            files['images'].forEach(file => {
+                const filePath = path.join(__dirname, '../assets/Products', file.filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+        if (files['gallery']) {
+            files['gallery'].forEach(file => {
+                const filePath = path.join(__dirname, '../assets/Products', file.filename);
+                if (fs.existsSync(filePath)) {
+                    fs.unlinkSync(filePath);
+                }
+            });
+        }
+    }
+};
 
 /* create new product */
-router.post('/products', async (req, res) => {
+router.post('/products', uploadFiles.fields([
+    { name: 'images', maxCount: 1 },
+    { name: 'gallery', maxCount: 5 }
+]), async (req, res) => {
     const { category, productName, gender, stock } = req.body;
     try {
         // Check Category(Validation)
@@ -16,18 +44,27 @@ router.post('/products', async (req, res) => {
         const randomSuffix = Math.floor(Math.random() * 10000);
         req.body.slug = `${baseSlug}-${randomSuffix}`;
         // Check Stock Value
-        req.body.inStock = stock > 0; // shorter way
+        req.body.inStock = stock > 0;
 
         // Check Existing Products
         const existingProducts = await Products.findOne({ productName, category, gender });
         if (existingProducts) {
+            deleteUploadedFiles(req.files);
             return res.status(400).json({ message: 'Product already exists for this gender and category' })
+        }
+        if (req.files && req.files['images'] && req.files['images'][0]) {
+            console.log('req.files: ', req.files);
+            req.body.images = req.files['images'][0].filename;
+        }
+        if (req.files && req.files['gallery']) {
+            req.body.gallery = req.files['gallery'].map(file => file.filename);
         }
         const newProduct = new Products(req.body)
         await newProduct.save();
-        return res.status(200).json({ message: 'Product created successfully', result: newProduct });
+        return res.status(200).json({ message: 'Product created successfully', result: newProduct, code: 200, success: true, });
     }
     catch (error) {
+        deleteUploadedFiles(req.files);
         if (error.name === "ValidationError") {
             const messages = Object.values(error.errors).map(val => val.message);
             return res.status(400).json({ message: messages });
@@ -42,7 +79,7 @@ router.put('/updateProducts/:id', async (req, res) => {
     try {
         const products = await Products.findById(req.params.id);
         if (!products) {
-            return res.status(404).json({ message: "Product doesn't exists" })
+            return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         req.body.slug = slugify(productName, { lower: true })
         const updateProducts = await Products.findByIdAndUpdate(req.params.id, {
@@ -60,7 +97,7 @@ router.delete('/deleteProducts/:id', async (req, res) => {
     try {
         const products = await Products.findById(req.params.id);
         if (!products) {
-            return res.status(404).json({ message: "Product doesn't exists" })
+            return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         await Products.findByIdAndDelete(req.params.id);
 

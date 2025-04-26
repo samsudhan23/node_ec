@@ -64,6 +64,26 @@ router.get('/getCategories', async (req, res) => {
     }
 })
 
+/* update product */
+router.put('/updateCategory/:id', async (req, res) => {
+    const { categoryName } = req.body;
+    try {
+        const updateCategory = await Category.findById(req.params.id);
+        if (!updateCategory) {
+            return res.status(404).json({ message: "Category doesn't exists", result: [] })
+        }
+        req.body.slug = slugify(categoryName, { lower: true })
+        const updateCate = await Category.findByIdAndUpdate(req.params.id, {
+            $set: req.body
+        }, { new: true });
+
+        return res.status(200).json({ result: updateCate, code: 200, success: true, message: 'Category Updated successfully', })
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+})
+
 /** Delete Category */
 router.delete('/deleteCategory/:id', async (req, res) => {
     try {
