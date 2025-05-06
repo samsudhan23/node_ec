@@ -36,7 +36,7 @@ router.get('/cart/get/:userId', async (req, res) => {
         if (!cartItems || cartItems.length === 0) {
             return res.status(404).json({ message: 'No cart items found', result: [] });
         }
-        return res.status(200).json({ result: cartItems });
+        return res.status(200).json({ result: cartItems, code: 200, success: true, });
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' })
@@ -66,7 +66,7 @@ router.delete('/cart/delete/:id', async (req, res) => {
         if (!cartId) {
             return res.status(404).json({ message: 'Cart items not found', result: [] });
         }
-        await Cart.findByIdAndDelete(cartId);
+        await Cart.findByIdAndDelete(req.params.id);
         return res.status(200).json({ code: 200, success: true, message: 'Cart Deleted successfully', })
     }
     catch (error) {

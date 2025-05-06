@@ -32,7 +32,7 @@ router.delete('/wishList/delete/:id', async (req, res) => {
         if (!wishlistId) {
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
-        await wishLists.findByIdAndDelete(wishlistId);
+        await wishLists.findByIdAndDelete(req.params.id);
         return res.status(200).json({ code: 200, success: true, message: 'Product Removed successfully', })
     }
     catch (error) {
