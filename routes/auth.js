@@ -81,7 +81,7 @@ router.post("/auth/login", async (req, res) => {
             return res.status(400).json({ message: 'Invalid password' });
         }
         await user.save();
-        res.status(200).json({ message: 'Login Successfully', result: user.id, email: user.email, code: 200 })
+        res.status(200).json({ message: 'Login Successfully', result: { id: user.id, email: user.email, role: user.role, }, code: 200 })
     }
     catch (err) {
         res.status(500).json({ message: 'Server Error' })
