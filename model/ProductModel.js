@@ -38,13 +38,13 @@ const productSchema = new mongoose.Schema({
     },
     colors: {
         type: [String],
-        required: [true, 'Colors are required'],
-        validate: {
-            validator: function (value) {
-                return value.length > 0;
-            },
-            message: 'At least one color is required'
-        }
+        // required: [true, 'Colors are required'],
+        // validate: {
+        //     validator: function (value) {
+        //         return value.length > 0;
+        //     },
+        //     message: 'At least one color is required'
+        // }
     },
     tags: [String],
     rating: {

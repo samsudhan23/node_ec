@@ -35,10 +35,16 @@ router.post('/products', uploadFiles.fields([
 ]), async (req, res) => {
     const { category, productName, gender, stock } = req.body;
     try {
+        const isInvalidField = (value) => !value || value.trim() === '' || value == 0;
         // Check Category(Validation)
-        if (!category || category.trim() === '') {
+        if (isInvalidField(category)) {
             deleteUploadedFiles(req.files);
             return res.status(400).json({ message: 'Category is required' });
+        }
+
+        if (isInvalidField(gender)) {
+            deleteUploadedFiles(req.files);
+            return res.status(400).json({ message: 'Gender is required' });
         }
         // Set Unique Slug name
         const baseSlug = slugify(productName, { lower: true });
@@ -54,7 +60,6 @@ router.post('/products', uploadFiles.fields([
             return res.status(400).json({ message: 'Product already exists for this gender and category' })
         }
         if (req.files && req.files['images'] && req.files['images'][0]) {
-            console.log('req.files: ', req.files);
             req.body.images = req.files['images'][0].filename;
         }
         if (req.files && req.files['gallery']) {
