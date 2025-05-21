@@ -84,14 +84,21 @@ router.put('/updateProducts/:id', uploadFiles.fields([
     { name: 'images', maxCount: 1 },
     { name: 'gallery', maxCount: 5 }
 ]), async (req, res) => {
-    const { productName } = req.body;
+    const { productName, category, gender } = req.body;
     try {
         const products = await Products.findById(req.params.id);
         if (!products) {
             deleteUploadedFiles(req.files)
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
+        // Slug Duplicate Checking
         req.body.slug = slugify(productName, { lower: true })
+        const existingSlug = await Products.findOne({ slug: req.body.slug, category, gender })
+        console.log('existingSlug: ', existingSlug);
+        if (existingSlug && existingSlug._id.toString() !== req.params.id) {
+            deleteUploadedFiles(req.files)
+            return res.status(404).json({ message: "A product with the same name already exists in this category and gender.", result: [] })
+        }
         if (req.files && req.files['images'] && req.files['images'][0]) {
             if (products.images) {
                 const oldPath = path.join(__dirname, '../assets/Products', products.images);
@@ -119,7 +126,8 @@ router.put('/updateProducts/:id', uploadFiles.fields([
         return res.status(200).json({ result: updateProducts, code: 200, success: true, message: 'Product Updated successfully', })
     }
     catch (error) {
-        deleteUploadedFiles(req.files)
+        console.error('Error updating product:', error);
+        // deleteUploadedFiles(req.files)
         res.status(500).json({ message: 'Server Error' });
     }
 })

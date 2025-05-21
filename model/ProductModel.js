@@ -14,7 +14,7 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     discountPrice: Number,
-    slug: { type: String, unique: true },
+    slug: { type: String, required: true },
     gallery: {
         type: [String],
         required: [true, 'Gallery is required'],
@@ -55,6 +55,7 @@ const productSchema = new mongoose.Schema({
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
 });
+productSchema.index({ slug: 1, category: 1, gender: 1 }, { unique: true });
 
 module.exports = mongoose.model('products', productSchema)
 
