@@ -8,23 +8,15 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     productDescription: String,
-    imageUrl: { type: String, required: true },
-    imageName: { type: String, required: true },
-    imageType: { type: String, required: true },
+    images: { type: String, required: true },
     price: {
         type: Number,
         required: true,
     },
     discountPrice: Number,
-    slug: { type: String, unique: true },
+    // slug: { type: String, required: true },
     gallery: {
-        type: [
-            {
-                imageUrl: { type: String, required: true },
-                imageName: { type: String, required: true },
-                imageType: { type: String, required: true }
-            }
-        ],
+        type: [String],
         required: [true, 'Gallery is required'],
         validate: {
             validator: function (value) {
@@ -46,13 +38,13 @@ const productSchema = new mongoose.Schema({
     },
     colors: {
         type: [String],
-        required: [true, 'Colors are required'],
-        validate: {
-            validator: function (value) {
-                return value.length > 0;
-            },
-            message: 'At least one color is required'
-        }
+        // required: [true, 'Colors are required'],
+        // validate: {
+        //     validator: function (value) {
+        //         return value.length > 0;
+        //     },
+        //     message: 'At least one color is required'
+        // }
     },
     tags: [String],
     rating: {
@@ -63,6 +55,10 @@ const productSchema = new mongoose.Schema({
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
 });
+productSchema.index(
+    { productName: 1, category: 1, gender: 1 },
+    { unique: true }
+);
 
 module.exports = mongoose.model('products', productSchema)
 
