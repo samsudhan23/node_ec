@@ -55,7 +55,10 @@ const productSchema = new mongoose.Schema({
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
 });
-
+productSchema.index(
+    { productName: 1, category: 1, gender: 1 },
+    { unique: true }
+);
 module.exports = mongoose.model('products', productSchema)
 
 // {

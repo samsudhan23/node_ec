@@ -47,14 +47,14 @@ router.post('/products', uploadFiles.fields([
             return res.status(400).json({ message: 'Gender is required' });
         }
         // Set Unique Slug name
-        const baseSlug = slugify(productName, { lower: true });
-        const randomSuffix = Math.floor(Math.random() * 10000);
-        req.body.slug = `${baseSlug}-${randomSuffix}`;
+        // const baseSlug = slugify(productName, { lower: true });
+        // const randomSuffix = Math.floor(Math.random() * 10000);
+        // req.body.slug = `${baseSlug}-${randomSuffix}`;
         // Check Stock Value
         req.body.inStock = stock > 0;
 
         // Check Existing Products
-        const existingProducts = await Products.findOne({ productName, category, gender });
+        const existingProducts = await Products.findOne({ productName, category });
         if (existingProducts) {
             deleteUploadedFiles(req.files);
             return res.status(400).json({ message: 'Product already exists for this gender and category' })
@@ -91,7 +91,7 @@ router.put('/updateProducts/:id', uploadFiles.fields([
             deleteUploadedFiles(req.files)
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
-        req.body.slug = slugify(productName, { lower: true })
+        // req.body.slug = slugify(productName, { lower: true })
         if (req.files && req.files['images'] && req.files['images'][0]) {
             if (products.images) {
                 const oldPath = path.join(__dirname, '../assets/Products', products.images);
@@ -102,15 +102,50 @@ router.put('/updateProducts/:id', uploadFiles.fields([
             }
         }
         if (req.files && req.files['gallery']) {
+            // Get retained gallery images from frontend
+            let existingGallery = req.body.existingGallery || [];
+            if (!Array.isArray(existingGallery)) {
+                existingGallery = [existingGallery]; // normalize
+            }
+
+            // Get new uploaded filenames
+            const newGalleryFiles = req.files['gallery'].map(file => file.filename);
+            req.body.gallery = [...existingGallery, ...newGalleryFiles];
+
+            // 🔁 Delete only images that were removed (i.e., in DB but not in existingGallery)
             if (products.gallery && products.gallery.length > 0) {
-                products.gallery.forEach(oldImage => {
+                const removed = products.gallery.filter(
+                    oldImg => !existingGallery.includes(oldImg)
+                );
+                removed.forEach(oldImage => {
                     const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
                     if (fs.existsSync(oldImagePath)) {
                         fs.unlinkSync(oldImagePath);
                     }
                 });
             }
-            req.body.gallery = req.files['gallery'].map(file => file.filename);
+        } else if (req.body.existingGallery) {
+            // No new files, only keep existing ones
+            let existingGallery = req.body.existingGallery;
+            if (!Array.isArray(existingGallery)) {
+                existingGallery = [existingGallery];
+            }
+
+            // Delete removed ones
+            const removed = products.gallery.filter(
+                oldImg => !existingGallery.includes(oldImg)
+            );
+            removed.forEach(oldImage => {
+                const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                if (fs.existsSync(oldImagePath)) {
+                    fs.unlinkSync(oldImagePath);
+                }
+            });
+
+            req.body.gallery = existingGallery;
+        } else {
+            // No gallery files at all, so clear it
+            req.body.gallery = [];
         }
         const updateProducts = await Products.findByIdAndUpdate(req.params.id, {
             $set: req.body
@@ -127,7 +162,6 @@ router.put('/updateProducts/:id', uploadFiles.fields([
 router.delete('/deleteProducts/:id', async (req, res) => {
     try {
         const products = await Products.findById(req.params.id);
-        console.log('products: ', products);
         if (!products) {
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
