@@ -93,11 +93,11 @@ router.put('/updateProducts/:id', uploadFiles.fields([
         }
         // Slug Duplicate Checking
         // req.body.slug = slugify(productName, { lower: true })
-        const existingSlug = await Products.findOne({ slug: req.body.slug, category, gender })
+        const existingSlug = await Products.findOne({ productName, category })
         console.log('existingSlug: ', existingSlug);
         if (existingSlug && existingSlug._id.toString() !== req.params.id) {
             deleteUploadedFiles(req.files)
-            return res.status(404).json({ message: "A product with the same name already exists in this category and gender.", result: [] })
+            return res.status(400).json({ message: "A product with the same name already exists in this category and gender.", result: [] })
         }
         if (req.files && req.files['images'] && req.files['images'][0]) {
             if (products.images) {

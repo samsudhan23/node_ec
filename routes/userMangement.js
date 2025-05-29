@@ -47,11 +47,12 @@ router.put('/updateUser/:id', async (req, res) => {
     }
 })
 // Delete User
-router.delete('/deleteUser/:id', async (req, res) => {
+router.post('/deleteUser', async (req, res) => {
+       const { ids } = req.body
     try {
-        const id = await Users.findById(req.params.id);
+        const id = await Users.find({ _id: { $in: ids } });
         if (!id) { return res.status(404).json({ message: "User doesn't exits" }) };
-        await Users.findByIdAndDelete(req.params.id)
+        await Users.deleteMany({ _id: { $in: ids } })
         return res.status(200).json({ message: 'User Deleted Successfully', code: 200, success: true })
     }
     catch (error) {
