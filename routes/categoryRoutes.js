@@ -85,13 +85,14 @@ router.put('/updateCategory/:id', async (req, res) => {
 })
 
 /** Delete Category */
-router.delete('/deleteCategory/:id', async (req, res) => {
+router.delete('/deleteCategory', async (req, res) => {
+        const { ids } = req.body
     try {
-        const category = await Category.findById(req.params.id);
+        const category = await Category.findById({ _id: { $in: ids } });
         if (!category) {
             return res.status(404).json({ message: "Category doesn't exists", result: [] })
         }
-        await Category.findByIdAndDelete(req.params.id);
+        await Category.deleteMany({ _id: { $in: ids } });
 
         return res.status(200).json({ code: 200, success: true, message: 'Category Deleted successfully', })
     }
