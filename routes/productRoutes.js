@@ -167,27 +167,30 @@ router.put('/updateProducts/:id', uploadFiles.fields([
     }
 })
 /** Delete Products */
-router.delete('/deleteProducts/:id', async (req, res) => {
+router.post('/deleteProducts', async (req, res) => {
+    const { ids } = req.body
     try {
-        const products = await Products.findById(req.params.id);
+        const products = await Products.find({ _id: { $in: ids } });
         if (!products) {
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
-        await Products.findByIdAndDelete(req.params.id);
-        if (products.images) {
-            const oldPath = path.join(__dirname, '../assets/Products', products.images);
-            if (fs.existsSync(oldPath)) {
-                fs.unlinkSync(oldPath);
-            }
-            // req.body.images = req.files['images'][0].filename;
-        }
-        if (products.gallery && products.gallery.length > 0) {
-            products.gallery.forEach(oldImage => {
-                const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
+        await Products.deleteMany({ _id: { $in: ids } });
+        for (let i = 0; i < products.length; i++) {
+            if (products[i].images) {
+                const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
+                if (fs.existsSync(oldPath)) {
+                    fs.unlinkSync(oldPath);
                 }
-            });
+                // req.body.images = req.files['images'][0].filename;
+            }
+            if (products[i].gallery && products[i].gallery.length > 0) {
+                products[i].gallery.forEach(oldImage => {
+                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                });
+            }
         }
         return res.status(200).json({ code: 200, success: true, message: 'Product Deleted successfully', })
     }
