@@ -37,7 +37,7 @@ router.post('/saveUser', async (req, res) => {
 router.put('/updateUser/:id', async (req, res) => {
     try {
         const id = await Users.findById(req.params.id)
-        if (!id) { return res.status(404).json({ message: "User doesn't exits" }) }
+        if (!id || id.length === 0) { return res.status(404).json({ message: "User doesn't exits" }) }
 
         const editUser = await Users.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
         return res.status(200).json({ message: 'User Updated Successfully', result: editUser, code: 200, success: true })
@@ -48,10 +48,10 @@ router.put('/updateUser/:id', async (req, res) => {
 })
 // Delete User
 router.post('/deleteUser', async (req, res) => {
-       const { ids } = req.body
+    const { ids } = req.body
     try {
         const id = await Users.find({ _id: { $in: ids } });
-        if (!id) { return res.status(404).json({ message: "User doesn't exits" }) };
+        if (!id || id.length === 0) { return res.status(404).json({ message: "User doesn't exits" }) };
         await Users.deleteMany({ _id: { $in: ids } })
         return res.status(200).json({ message: 'User Deleted Successfully', code: 200, success: true })
     }

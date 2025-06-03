@@ -87,14 +87,13 @@ router.put('/updateProducts/:id', uploadFiles.fields([
     const { productName, category, gender } = req.body;
     try {
         const products = await Products.findById(req.params.id);
-        if (!products) {
+        if (!products || products.length === 0) {
             deleteUploadedFiles(req.files)
             return res.status(404).json({ message: "Product doesn't exists", result: [] })
         }
         // Slug Duplicate Checking
         // req.body.slug = slugify(productName, { lower: true })
         const existingSlug = await Products.findOne({ productName, category })
-        console.log('existingSlug: ', existingSlug);
         if (existingSlug && existingSlug._id.toString() !== req.params.id) {
             deleteUploadedFiles(req.files)
             return res.status(400).json({ message: "A product with the same name already exists in this category and gender.", result: [] })
@@ -161,7 +160,6 @@ router.put('/updateProducts/:id', uploadFiles.fields([
         return res.status(200).json({ result: updateProducts, code: 200, success: true, message: 'Product Updated successfully', })
     }
     catch (error) {
-        console.error('Error updating product:', error);
         // deleteUploadedFiles(req.files)
         res.status(500).json({ message: 'Server Error' });
     }
@@ -171,8 +169,8 @@ router.post('/deleteProducts', async (req, res) => {
     const { ids } = req.body
     try {
         const products = await Products.find({ _id: { $in: ids } });
-        if (!products) {
-            return res.status(404).json({ message: "Product doesn't exists", result: [] })
+        if (!products || products.length === 0) {
+            return res.status(404).json({ message: "Product doesn't exists", result: [], success: false })
         }
         await Products.deleteMany({ _id: { $in: ids } });
         for (let i = 0; i < products.length; i++) {

@@ -69,7 +69,7 @@ router.put('/updateCategory/:id', async (req, res) => {
     const { categoryName } = req.body;
     try {
         const updateCategory = await Category.findById(req.params.id);
-        if (!updateCategory) {
+        if (!updateCategory || updateCategory.length === 0) {
             return res.status(404).json({ message: "Category doesn't exists", result: [] })
         }
         req.body.slug = slugify(categoryName, { lower: true })
@@ -86,10 +86,10 @@ router.put('/updateCategory/:id', async (req, res) => {
 
 /** Delete Category */
 router.delete('/deleteCategory', async (req, res) => {
-        const { ids } = req.body
+    const { ids } = req.body
     try {
         const category = await Category.findById({ _id: { $in: ids } });
-        if (!category) {
+        if (!category || category.length === 0) {
             return res.status(404).json({ message: "Category doesn't exists", result: [] })
         }
         await Category.deleteMany({ _id: { $in: ids } });

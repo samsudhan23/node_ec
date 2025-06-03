@@ -12,6 +12,9 @@ const wishListSchema = new mongoose.Schema({
         required: true
     }
 
-})
+}, { timestamps: true });
+wishListSchema.index({
+    userId: 1, productId: 1
+}, { unique: true })
 
 module.exports = mongoose.model('wishlists', wishListSchema)
