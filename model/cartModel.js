@@ -23,7 +23,6 @@ const cartItemSchema = new mongoose.Schema({
     },
     selectedColor: {
         type: String,
-        required: true,
     },
     addedAt: {
         type: Date,

@@ -29,14 +29,27 @@ router.post('/cart/add', async (req, res) => {
 
 })
 // Cart List
-router.get('/cart/get/:userId', async (req, res) => {
+router.get('/cart/get', async (req, res) => {
     try {
-        console.log('req: ', req.params.userId);
+        const cartItems = await Cart.find().populate('productId').populate('userId');
+        if (!cartItems || cartItems.length === 0) {
+            return res.status(404).json({ message: 'No cart items found', result: [], success: false });
+        }
+        return res.status(200).json({ result: cartItems, code: 200, success: true });
+    }
+    catch (error) {
+        res.status(500).json({ message: 'Server Error' })
+    }
+})
+
+// Cart get user wise List
+router.get('/cart/getById/:userId', async (req, res) => {
+    try {
         const cartItems = await Cart.find({ userId: req.params.userId }).populate('productId');
         if (!cartItems || cartItems.length === 0) {
             return res.status(404).json({ message: 'No cart items found', result: [] });
         }
-        return res.status(200).json({ result: cartItems, code: 200, success: true, });
+        return res.status(200).json({ result: cartItems, code: 200, success: true });
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' })
