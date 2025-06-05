@@ -85,7 +85,7 @@ router.put('/updateCategory/:id', async (req, res) => {
 })
 
 /** Delete Category */
-router.delete('/deleteCategory', async (req, res) => {
+router.post('/deleteCategory', async (req, res) => {
     const { ids } = req.body
     try {
         const category = await Category.findById({ _id: { $in: ids } });
