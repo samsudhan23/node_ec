@@ -26,16 +26,20 @@ const productSchema = new mongoose.Schema({
         }
     },
     brand: String,
-    sizes: {
-        type: [String],
-        required: [true, 'Sizes are required'],
-        validate: {
-            validator: function (value) {
-                return value.length > 0;
+    sizeStock: [
+        {
+            size: {
+                type: String,
+                required: true,
+                // enum: ['S', 'M', 'L', 'XL']
             },
-            message: 'At least one size is required'
+            stock: {
+                type: Number,
+                required: true,
+                min: 0
+            }
         }
-    },
+    ],
     colors: {
         type: [String],
         // required: [true, 'Colors are required'],
@@ -51,7 +55,7 @@ const productSchema = new mongoose.Schema({
         average: { type: Number, default: 0 },
         count: { type: Number, default: 0 }
     },
-    stock: { type: Number, default: 0, required: true, },
+    totalStock: { type: Number, default: 0, required: true, },
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
 });
