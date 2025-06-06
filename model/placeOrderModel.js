@@ -26,6 +26,10 @@ const orderSchema = new mongoose.Schema({
                 type: Number,
                 required: true,
             },
+            productAmount: {
+                type: Number,
+                required: true,
+            },
             selectedSize: {
                 type: String,
             },

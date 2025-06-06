@@ -33,7 +33,7 @@ router.post('/products', uploadFiles.fields([
     { name: 'images', maxCount: 1 },
     { name: 'gallery', maxCount: 5 }
 ]), async (req, res) => {
-    const { category, productName, gender, stock } = req.body;
+    const { category, productName, gender, totalStock } = req.body;
     try {
         const isInvalidField = (value) => !value || value.trim() === '' || value == 0;
         // Check Category(Validation)
@@ -51,7 +51,7 @@ router.post('/products', uploadFiles.fields([
         // const randomSuffix = Math.floor(Math.random() * 10000);
         // req.body.slug = `${baseSlug}-${randomSuffix}`;
         // Check Stock Value
-        req.body.inStock = stock > 0;
+        req.body.inStock = totalStock > 0;
 
         // Check Existing Products
         const existingProducts = await Products.findOne({ productName, category });
