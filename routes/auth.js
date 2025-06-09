@@ -76,12 +76,15 @@ router.post("/auth/login", async (req, res) => {
         if (!user) {
             return res.status(400).json({ message: 'Invalid Email' })
         }
+        if (user.isBlocked === true) {
+            return res.status(404).json({ message: 'Invalid User' })
+        }
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
             return res.status(400).json({ message: 'Invalid password' });
         }
         await user.save();
-        res.status(200).json({ message: 'Login Successfully', result: { id: user.id, email: user.email, role: user.role, }, code: 200 })
+        return res.status(200).json({ message: 'Login Successfully', result: { id: user.id, email: user.email, role: user.role, isBlocked: user.isBlocked }, code: 200 })
     }
     catch (err) {
         res.status(500).json({ message: 'Server Error' })

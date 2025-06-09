@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const bcrypt = require('bcrypt')
 const Users = require('../model/User');
 
 
@@ -15,7 +16,7 @@ router.get('/getAllUsers', async (req, res) => {
 })
 // Save User
 router.post('/saveUser', async (req, res) => {
-    const { email, phoneNumber } = req.body;
+    const { name, email, phoneNumber, password, dateOfBirth, role } = req.body;
     try {
         const existingEmail = await Users.findOne({
             $or: [
@@ -24,8 +25,9 @@ router.post('/saveUser', async (req, res) => {
             ]
         })
         if (existingEmail) { return res.status(400).json({ message: 'Email or Phone Number already exit' }) }
-
-        const newUser = new Users(req.body);
+        const hashedPassword = await bcrypt.hash(password, 10)
+        const newUser = new Users({ name, email, password: hashedPassword, phoneNumber, dateOfBirth, role })
+        // const newUser = new Users(req.body);
         await newUser.save();
         return res.status(200).json({ message: 'User saved Successfully', result: newUser, code: 200, success: true })
     }
