@@ -31,10 +31,13 @@ router.post('/cart/add', async (req, res) => {
 router.get('/cart/get', async (req, res) => {
     try {
         const cartItems = await Cart.find().populate('productId').populate('userId');
-        // if (!cartItems || cartItems.length === 0) {
-        //     return res.status(404).json({ message: 'No cart items found', result: [], success: false });
-        // }
-        return res.status(200).json({ result: cartItems, code: 200, success: true });
+        const unwantedUser = cartItems.filter(item => item.userId == null)
+        if (unwantedUser) {
+            const idsToDelete = unwantedUser.map(item => item._id)
+            await Cart.deleteMany({ _id: { $in: idsToDelete } });
+        }
+        const clearCartList = await Cart.find().populate('productId').populate('userId');
+        return res.status(200).json({ result: clearCartList, code: 200, success: true });
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' })
@@ -71,7 +74,7 @@ router.put('/cart/update/:id', async (req, res) => {
         }
         else {
             const updateCart = await Cart.findByIdAndUpdate(req.params.id, {
-                $set: { quantity, selectedSize }
+                $set: { quantity, selectedSize, userId, productId, }
             }, { new: true })
             return res.status(200).json({ message: 'Cart updated successfully', result: updateCart, code: 200, success: true, })
         }

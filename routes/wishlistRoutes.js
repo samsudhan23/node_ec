@@ -44,7 +44,13 @@ router.put('/wishList/update/:id', async (req, res) => {
 router.get('/wishList/get', async (req, res) => {
     try {
         const getAll = await wishLists.find().populate('productId').populate('userId');
-        return res.status(200).json({ result: getAll, code: 200, success: true, })
+        const unwantedUser = getAll.filter(item => item.userId == null)
+        if (unwantedUser) {
+            const idsToDelete = unwantedUser.map(item => item._id)
+            await wishLists.deleteMany({ _id: { $in: idsToDelete } });
+        }
+        const cleanWishlist = await wishLists.find().populate('productId').populate('userId');
+        return res.status(200).json({ result: cleanWishlist, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' })

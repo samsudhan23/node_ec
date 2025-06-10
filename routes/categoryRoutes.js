@@ -88,7 +88,7 @@ router.put('/updateCategory/:id', async (req, res) => {
 router.post('/deleteCategory', async (req, res) => {
     const { ids } = req.body
     try {
-        const category = await Category.findById({ _id: { $in: ids } });
+        const category = await Category.find({ _id: { $in: ids } });
         if (!category || category.length === 0) {
             return res.status(404).json({ message: "Category doesn't exists", result: [] })
         }
@@ -97,7 +97,7 @@ router.post('/deleteCategory', async (req, res) => {
         return res.status(200).json({ code: 200, success: true, message: 'Category Deleted successfully', })
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+       return res.status(500).json({ message: 'Server Error' });
     }
 })
 

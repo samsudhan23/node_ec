@@ -13,6 +13,7 @@ const productRoutes = require('./routes/productRoutes');
 const usersRoutes = require('./routes/userMangement');
 const cartRoutes = require('./routes/cart');
 const wishListRoutes = require('./routes/wishlistRoutes');
+const orderListRoutes = require('./routes/orderManagementRoutes');
 
 dotenv.config();
 const app = express();
@@ -32,6 +33,7 @@ app.use('/api', productRoutes);
 app.use('/api', usersRoutes);
 app.use('/api', cartRoutes);
 app.use('/api', wishListRoutes);
+app.use('/api', orderListRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

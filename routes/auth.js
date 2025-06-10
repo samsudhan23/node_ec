@@ -105,7 +105,7 @@ router.post('/auth/forgot-password', async (req, res) => {
         user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
         await user.save();
 
-        const resetUrl = `http://localhost:4200/reset-password/${token}`;
+        const resetUrl = `http://localhost:4300/reset-password/${token}`;
         const html = `<p>Click the link below to reset your password:</p><a href="${resetUrl}">${resetUrl}</a>`;
 
         await sendOTPMail(user.email, html, 'Reset Password', false);
