@@ -199,21 +199,48 @@ router.post('/deleteProducts', async (req, res) => {
 /* get all products */
 router.get('/getProducts', async (req, res) => {
     try {
-        const products = await Products.find().populate('category').populate('gender')
+        const products = await Products.find().populate('category').populate('gender');
         const hostURL = 'http://localhost:5000/assets/Products/';
-        const updatedProducts = products.map(item => {
+        // Delete products with missing categories
+        const withoutCategory = products.filter(item => item.category == null);
+        if (withoutCategory.length > 0) {
+            const idsToDelete = withoutCategory.map(item => item._id);
+            await Products.deleteMany({ _id: { $in: idsToDelete } });
+
+            // await Products.deleteMany({ _id: { $in: idsToDelete } });
+            for (let i = 0; i < products.length; i++) {
+                if (products[i].images) {
+                    const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
+                    // req.body.images = req.files['images'][0].filename;
+                }
+                if (products[i].gallery && products[i].gallery.length > 0) {
+                    products[i].gallery.forEach(oldImage => {
+                        const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                        }
+                    });
+                }
+            }
+        }
+        // Reload cleaned product list
+        const cleanProducts = await Products.find().populate('category').populate('gender');
+        const finalProducts = cleanProducts.map(item => {
             return {
                 ...item._doc,
-                images: item.images ? hostURL + item.images : null,
+                images: item.images ? hostURL + item.images : null, //image name with url set
                 gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
             }
-        })
-        return res.status(200).json({ result: updatedProducts, code: 200, success: true, })
-    }
-    catch (error) {
+        });
+
+        return res.status(200).json({ result: finalProducts, code: 200, success: true });
+    } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
-})
+});
 
 /* get single product */
 // router.get('/products/:id', async (req, res) => {

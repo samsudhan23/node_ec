@@ -44,7 +44,7 @@ router.put('/wishList/update/:id', async (req, res) => {
 router.get('/wishList/get', async (req, res) => {
     try {
         const getAll = await wishLists.find().populate('productId').populate('userId');
-        const unwantedUser = getAll.filter(item => item.userId == null)
+        const unwantedUser = getAll.filter(item => item.userId == null || item.productId == null)
         if (unwantedUser) {
             const idsToDelete = unwantedUser.map(item => item._id)
             await wishLists.deleteMany({ _id: { $in: idsToDelete } });

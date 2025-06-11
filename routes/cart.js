@@ -31,7 +31,7 @@ router.post('/cart/add', async (req, res) => {
 router.get('/cart/get', async (req, res) => {
     try {
         const cartItems = await Cart.find().populate('productId').populate('userId');
-        const unwantedUser = cartItems.filter(item => item.userId == null)
+        const unwantedUser = cartItems.filter(item => item.userId == null || item.productId == null)
         if (unwantedUser) {
             const idsToDelete = unwantedUser.map(item => item._id)
             await Cart.deleteMany({ _id: { $in: idsToDelete } });
