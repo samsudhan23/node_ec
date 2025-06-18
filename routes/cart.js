@@ -23,7 +23,7 @@ router.post('/cart/add', async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' })
+       return res.status(500).json({ message: 'Server Error' })
     }
 
 })
@@ -40,7 +40,7 @@ router.get('/cart/get', async (req, res) => {
         return res.status(200).json({ result: clearCartList, code: 200, success: true });
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' })
+       return res.status(500).json({ message: 'Server Error' })
     }
 })
 
@@ -54,7 +54,7 @@ router.get('/cart/getById/:userId', async (req, res) => {
         return res.status(200).json({ result: cartItems, code: 200, success: true });
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' })
+       return res.status(500).json({ message: 'Server Error' })
     }
 })
 // Update cart
@@ -66,7 +66,7 @@ router.put('/cart/update/:id', async (req, res) => {
             return res.status(404).json({ message: 'Cart items not found', result: [] });
         }
         const existingCartItem = await Cart.findOne({ userId, productId, selectedSize });
-        if (existingCartItem) {
+        if (existingCartItem && existingCartItem._id.toString() !== req.params.id) { //record added to the same ID and delete that record
             existingCartItem.quantity += quantity;
             await existingCartItem.save();
             await Cart.findByIdAndDelete(cartId) //same product with same size delete
@@ -80,7 +80,7 @@ router.put('/cart/update/:id', async (req, res) => {
         }
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' })
+        return res.status(500).json({ message: 'Server Error',success: false })
     }
 })
 // Delete Cart
@@ -95,7 +95,7 @@ router.post('/cart/delete', async (req, res) => {
         return res.status(200).json({ code: 200, success: true, message: 'Cart Deleted successfully', })
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' })
+       return res.status(500).json({ message: 'Server Error' })
     }
 })
 
