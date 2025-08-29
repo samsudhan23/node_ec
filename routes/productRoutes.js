@@ -205,19 +205,18 @@ router.get('/getProducts', async (req, res) => {
         const withoutCategory = products.filter(item => item.category == null);
         if (withoutCategory.length > 0) {
             const idsToDelete = withoutCategory.map(item => item._id);
-            await Products.deleteMany({ _id: { $in: idsToDelete } });
-
+            
             // await Products.deleteMany({ _id: { $in: idsToDelete } });
-            for (let i = 0; i < products.length; i++) {
-                if (products[i].images) {
-                    const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
+            for (let i = 0; i < withoutCategory.length; i++) {
+                if (withoutCategory[i].images) {
+                    const oldPath = path.join(__dirname, '../assets/Products', withoutCategory[i].images);
                     if (fs.existsSync(oldPath)) {
                         fs.unlinkSync(oldPath);
                     }
                     // req.body.images = req.files['images'][0].filename;
                 }
-                if (products[i].gallery && products[i].gallery.length > 0) {
-                    products[i].gallery.forEach(oldImage => {
+                if (withoutCategory[i].gallery && withoutCategory[i].gallery.length > 0) {
+                    withoutCategory[i].gallery.forEach(oldImage => {
                         const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
                         if (fs.existsSync(oldImagePath)) {
                             fs.unlinkSync(oldImagePath);
@@ -225,6 +224,7 @@ router.get('/getProducts', async (req, res) => {
                     });
                 }
             }
+            await Products.deleteMany({ _id: { $in: idsToDelete } });
         }
         // Reload cleaned product list
         const cleanProducts = await Products.find().populate('category').populate('gender');
