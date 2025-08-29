@@ -10,6 +10,10 @@ router.post('/cart/add', async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: 'Product not found', result: [] });
         }
+        const getSizeQuantity = product.sizeStock.filter(val => val.size == selectedSize)
+        if (getSizeQuantity[0].stock < quantity) {
+            return res.status(400).json({ message: 'Quantity is more than the product stock', result: [], status: false })
+        }
 
         const existingCartItem = await Cart.findOne({ userId, productId, selectedSize });
         if (existingCartItem) {
@@ -23,7 +27,7 @@ router.post('/cart/add', async (req, res) => {
         }
     }
     catch (error) {
-       return res.status(500).json({ message: 'Server Error' })
+        return res.status(500).json({ message: 'Server Error' })
     }
 
 })
@@ -40,7 +44,7 @@ router.get('/cart/get', async (req, res) => {
         return res.status(200).json({ result: clearCartList, code: 200, success: true });
     }
     catch (error) {
-       return res.status(500).json({ message: 'Server Error' })
+        return res.status(500).json({ message: 'Server Error' })
     }
 })
 
@@ -54,7 +58,7 @@ router.get('/cart/getById/:userId', async (req, res) => {
         return res.status(200).json({ result: cartItems, code: 200, success: true });
     }
     catch (error) {
-       return res.status(500).json({ message: 'Server Error' })
+        return res.status(500).json({ message: 'Server Error' })
     }
 })
 // Update cart
@@ -64,6 +68,11 @@ router.put('/cart/update/:id', async (req, res) => {
         const cartId = await Cart.findById(req.params.id)
         if (!cartId) {
             return res.status(404).json({ message: 'Cart items not found', result: [] });
+        }
+        const product = await Products.findById(cartId.productId);
+        const getSizeQuantity = product.sizeStock.filter(val => val.size == selectedSize)
+        if (getSizeQuantity[0].stock < quantity) {
+            return res.status(400).json({ message: 'Quantity is more than the product stock', result: [], status: false })
         }
         const existingCartItem = await Cart.findOne({ userId, productId, selectedSize });
         if (existingCartItem && existingCartItem._id.toString() !== req.params.id) { //record added to the same ID and delete that record
@@ -95,7 +104,7 @@ router.post('/cart/delete', async (req, res) => {
         return res.status(200).json({ code: 200, success: true, message: 'Cart Deleted successfully', })
     }
     catch (error) {
-       return res.status(500).json({ message: 'Server Error' })
+        return res.status(500).json({ message: 'Server Error' })
     }
 })
 
