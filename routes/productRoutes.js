@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Products = require('../model/ProductModel')
 const slugify = require('slugify');
+const axios = require('axios');
 const path = require('path');
 const fs = require('fs');
 const uploadFiles = require('../utils/multer');
@@ -205,7 +206,7 @@ router.get('/getProducts', async (req, res) => {
         const withoutCategory = products.filter(item => item.category == null);
         if (withoutCategory.length > 0) {
             const idsToDelete = withoutCategory.map(item => item._id);
-            
+
             // await Products.deleteMany({ _id: { $in: idsToDelete } });
             for (let i = 0; i < withoutCategory.length; i++) {
                 if (withoutCategory[i].images) {
@@ -239,6 +240,15 @@ router.get('/getProducts', async (req, res) => {
         return res.status(200).json({ result: finalProducts, code: 200, success: true });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
+    }
+});
+
+router.get('/colors', async (req, res) => {
+    try {
+        const response = await axios.get('https://csscolorsapi.com/api/colors');
+        return res.status(200).json({ result: response.data.colors, code: 200, success: true })
+    } catch (err) {
+        return res.status(err.response?.status || 500).json({ message: err.message });
     }
 });
 
