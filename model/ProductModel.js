@@ -7,8 +7,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    sku: { type: String, required: [true, 'Sku is required'] },
     productMaterial: { type: String, requied: [true, 'Material is required'] },
-    careInstruction: { type: String},
+    careInstruction: { type: String },
     productDescription: String,
     images: { type: String, required: true },
     price: {
@@ -62,7 +63,7 @@ const productSchema = new mongoose.Schema({
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
 });
 productSchema.index(
-    { productName: 1, category: 1, gender: 1 },
+    { productName: 1, category: 1, gender: 1, sku: 1 },
     { unique: true }
 );
 

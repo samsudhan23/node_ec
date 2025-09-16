@@ -1,4 +1,5 @@
 const express = require('express');
+const crypto = require('crypto');
 const router = express.Router();
 const Products = require('../model/ProductModel')
 const slugify = require('slugify');
@@ -66,6 +67,7 @@ router.post('/products', uploadFiles.fields([
         if (req.files && req.files['gallery']) {
             req.body.gallery = req.files['gallery'].map(file => file.filename);
         }
+        req.body.sku = await generateSku();
         const newProduct = new Products(req.body)
         await newProduct.save();
         return res.status(200).json({ message: 'Product created successfully', result: newProduct, code: 200, success: true, });
@@ -251,19 +253,10 @@ router.get('/colors', async (req, res) => {
         return res.status(err.response?.status || 500).json({ message: err.message });
     }
 });
-
-/* get single product */
-// router.get('/products/:id', async (req, res) => {
-//     try {
-//         const products = await Products.findById(req.params.id);
-//         if (!products) {
-//             return res.status(404).json({ message: "Product doesn't exists" })
-//         }
-//         return res.status(200).json({ result: products, code: 200, success: true })
-//     }
-//     catch (error) {
-//         res.status(500).json({ message: 'Server Error' });
-//     }
-// })
+//For Generate SKU
+async function generateSku(prefix = "SKU") {
+    const hash = crypto.randomBytes(3).toString("hex").toUpperCase();
+    return `${prefix}-${hash}`;
+}
 
 module.exports = router;
