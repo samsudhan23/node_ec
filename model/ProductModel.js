@@ -8,6 +8,7 @@ const productSchema = new mongoose.Schema({
         required: true,
     },
     sku: { type: String, required: [true, 'Sku is required'] },
+    warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouse', required: [true, 'Warehouse is required'] },
     productMaterial: { type: String, requied: [true, 'Material is required'] },
     careInstruction: { type: String },
     productDescription: String,
