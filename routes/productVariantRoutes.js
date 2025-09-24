@@ -50,7 +50,7 @@ router.put('/editProductVariant/:id', async (req, res) => {
     }
 });
 
-router.post('/deleteProductVariant/', async (req, res) => {
+router.post('/deleteProductVariant', async (req, res) => {
     const { ids } = req.body;
     try {
         const delVariant = await productVariant.findById({ _id: { $in: ids } });
