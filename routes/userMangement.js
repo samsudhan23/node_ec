@@ -37,17 +37,37 @@ router.post('/saveUser', async (req, res) => {
 })
 // Update User
 router.put('/updateUser/:id', async (req, res) => {
+    const { email, phoneNumber } = req.body;
     try {
-        const id = await Users.findById(req.params.id)
-        if (!id || id.length === 0) { return res.status(404).json({ message: "User doesn't exits" }) }
+        const user = await Users.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ message: "User doesn't exist" });
+        }
+        // Check if email or phone already exists in another user
+        const existingUser = await Users.findOne({
+            $or: [{ email }, { phoneNumber }],
+            _id: { $ne: req.params.id }
+        });
 
-        const editUser = await Users.findByIdAndUpdate(req.params.id, { $set: req.body }, { new: true });
-        return res.status(200).json({ message: 'User Updated Successfully', result: editUser, code: 200, success: true })
+        if (existingUser) {
+            return res.status(400).json({ message: "User already exists" });
+        }
+        const editUser = await Users.findByIdAndUpdate(
+            req.params.id,
+            { $set: req.body },
+            { new: true }
+        );
+        return res.status(200).json({
+            message: 'User Updated Successfully',
+            result: editUser,
+            code: 200,
+            success: true
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
     }
-    catch (error) {
-        res.status(500).json({ message: 'Server Error' })
-    }
-})
+});
+
 // Delete User
 router.post('/deleteUser', async (req, res) => {
     const { ids } = req.body

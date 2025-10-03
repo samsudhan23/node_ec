@@ -3,6 +3,7 @@ const router = express.Router();
 const slugify = require('slugify');
 const Category = require('../model/CategoryModel');
 const Gender = require('../model/genterModel');
+const Products = require('../model/ProductModel')
 
 // Gender API
 router.post('/gender', async (req, res) => {
@@ -25,7 +26,17 @@ router.post('/gender', async (req, res) => {
 router.get('/genderList', async (req, res) => {
     try {
         const getList = await Gender.find();
-        return res.status(200).json({ result: getList, code: 200, success: true, })
+        const genderWithCategories = await Promise.all(
+            getList.map(async (g) => {
+                const categoryIds = await Products.distinct("category", { gender: g._id });
+                const categories = await Category.find({ _id: { $in: categoryIds } });
+                return {
+                    ...g._doc, //is the raw object data inside that document
+                    categories
+                }
+            })
+        )
+        return res.status(200).json({ result: getList, navData: genderWithCategories, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).res.json({ message: 'Server Error' })
@@ -72,6 +83,11 @@ router.put('/updateCategory/:id', async (req, res) => {
         if (!updateCategory || updateCategory.length === 0) {
             return res.status(404).json({ message: "Category doesn't exists", result: [] })
         }
+        // Check Existing Products
+        const existing = await Category.findOne({ categoryName, _id: { $ne: req.params.id } });
+        if (existing) {
+            return res.status(400).json({ message: 'Category already exists' })
+        }
         req.body.slug = slugify(categoryName, { lower: true })
         const updateCate = await Category.findByIdAndUpdate(req.params.id, {
             $set: req.body
@@ -80,7 +96,7 @@ router.put('/updateCategory/:id', async (req, res) => {
         return res.status(200).json({ result: updateCate, code: 200, success: true, message: 'Category Updated successfully', })
     }
     catch (error) {
-        res.status(500).json({ message: 'Server Error' });
+        res.status(500).json({ message: error, code: 500, success: false, });
     }
 })
 
@@ -97,7 +113,7 @@ router.post('/deleteCategory', async (req, res) => {
         return res.status(200).json({ code: 200, success: true, message: 'Category Deleted successfully', })
     }
     catch (error) {
-       return res.status(500).json({ message: 'Server Error' });
+        return res.status(500).json({ message: 'Server Error' });
     }
 })
 
