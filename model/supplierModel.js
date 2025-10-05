@@ -5,6 +5,6 @@ const supplierSchema = new mongoose.Schema({
     contactPerson: { type: String, required: [true, 'ContactPerson is required'] },
     address: { type: String, required: [true, 'Address is required'] },
     price:{ type: Number },
-})
+},{ timestamps: true })
 
 module.exports = mongoose.model('Supplier', supplierSchema)

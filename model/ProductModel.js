@@ -62,50 +62,10 @@ const productSchema = new mongoose.Schema({
     totalStock: { type: Number, default: 0, required: true, },
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
-});
+},{ timestamps: true });
 productSchema.index(
     { productName: 1, category: 1, gender: 1, sku: 1 },
     { unique: true }
 );
 
 module.exports = mongoose.model('products', productSchema)
-
-// {
-//     "productName": "Batman Oversized T-Shirt",
-//     "productDescription": "Comfortable oversized Batman themed t-shirt made from premium cotton.",
-//     "price": 699,
-//     "discountPrice": 599,
-//     "imageUrl": "/uploads/batman_main.jpg",
-//     "imageName": "batman_main.jpg",
-//     "imageType": "image/jpeg",
-//     "gallery": [
-//       {
-//         "imageUrl": "/uploads/batman_side1.jpg",
-//         "imageName": "batman_side1.jpg",
-//         "imageType": "image/jpeg"
-//       },
-//       {
-//         "imageUrl": "/uploads/batman_side2.jpg",
-//         "imageName": "batman_side2.jpg",
-//         "imageType": "image/jpeg"
-//       }
-//     ],
-//     "sizes": [
-//       "S",
-//       "M",
-//       "L",
-//       "XL"
-//     ],
-//     "colors": [
-//       "Black"
-//     ],
-//     "tags": [
-//       "batman",
-//       "oversized",
-//       "tshirt",
-//       "superhero"
-//     ],
-//     "stock": 50,
-//     "inStock": true,
-//     "category": "66169260e1234567890abcde"
-//   }

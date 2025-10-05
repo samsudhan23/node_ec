@@ -5,6 +5,6 @@ const wareHouseSchema = new mongoose.Schema({
     address: { type: String, required: true },
     contactPerson: { type: String, required: true },
     phone: { type: Number, required: true },
-})
+},{ timestamps: true })
 
 module.exports = mongoose.model('warehouse', wareHouseSchema)
