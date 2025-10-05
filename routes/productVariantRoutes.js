@@ -5,7 +5,7 @@ const productVariant = require('../model/productVariantModel');
 
 router.get('/getProductVariant', async (req, res) => {
     try {
-        const getVariant = await productVariant.find();
+        const getVariant = await productVariant.find().populate('category');
         return res.status(200).json({ result: getVariant, code: 200, status: true })
     }
     catch (err) {

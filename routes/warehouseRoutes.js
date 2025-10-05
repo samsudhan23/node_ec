@@ -39,7 +39,7 @@ router.put('/updateWarehouse/:id', async (req, res) => {
             return res.status(404).json({ message: "Warehouse doesn't exists", result: [] })
         }
         // Check Existing
-        const duplicateCheck = await WareHouse.findOne({ warehouseName });
+        const duplicateCheck = await WareHouse.findOne({ warehouseName, _id: { $ne: req.params.id } });
         if (duplicateCheck) {
             return res.status(400).json({ message: 'Warehouse already exists' })
         }
