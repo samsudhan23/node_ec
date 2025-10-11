@@ -13,7 +13,7 @@ router.get('/getPurchaseOrderList', async (req, res) => {
 })
 
 
-router.post('/savePuchaseOrder', async (req, res) => {
+router.post('/savePurchaseOrder', async (req, res) => {
     try {
         const { supplierId, purchaseItem, orderDate, expextedDate, status } = req.body;
         // Check Existing purchase

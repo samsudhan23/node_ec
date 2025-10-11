@@ -245,6 +245,27 @@ router.get('/getProducts', async (req, res) => {
     }
 });
 
+// Get ByID
+router.get('/getByIDProducts/:id', async (req, res) => {
+    const {prodID} = req.params.id
+    try {
+        const products = await Products.findById(prodID);        
+        // Reload cleaned product list
+        // const cleanProducts = await Products.find().populate('category').populate('gender');
+        // const finalProducts = cleanProducts.map(item => {
+        //     return {
+        //         ...item._doc,
+        //         images: item.images ? hostURL + item.images : null, //image name with url set
+        //         gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
+        //     }
+        // });
+
+        return res.status(200).json({ result: products, code: 200, success: true });
+    } catch (error) {
+        res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 router.get('/colors', async (req, res) => {
     try {
         const response = await axios.get('https://csscolorsapi.com/api/colors');
