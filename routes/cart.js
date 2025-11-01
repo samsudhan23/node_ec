@@ -34,14 +34,34 @@ router.post('/cart/add', async (req, res) => {
 // Cart List
 router.get('/cart/get', async (req, res) => {
     try {
-        const cartItems = await Cart.find().populate('productId').populate('userId');
+         const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
+        const cartItems = await Cart.find().populate('productId').populate('userId').populate('categoryID');
         const unwantedUser = cartItems.filter(item => item.userId == null || item.productId == null)
         if (unwantedUser) {
             const idsToDelete = unwantedUser.map(item => item._id)
             await Cart.deleteMany({ _id: { $in: idsToDelete } });
         }
-        const clearCartList = await Cart.find().populate('productId').populate('userId');
-        return res.status(200).json({ result: clearCartList, code: 200, success: true });
+        const clearCartList = await Cart.find().populate('productId').populate('userId').populate('categoryID');
+        const cartWithImagePaths = clearCartList.map(item => {
+            const product = item.productId;
+            if (product) {
+                // ✅ Fix main image
+                if (product.images) {
+                    if (!product.images.startsWith('http')) {
+                        product.images = `${baseURL}${product.images}`;
+                    }
+                }
+
+                // ✅ Fix gallery array
+                if (product.gallery && Array.isArray(product.gallery)) {
+                    product.gallery = product.gallery.map(img =>
+                        img.startsWith('http') ? img : `${baseURL}${img}`
+                    );
+                }
+            }
+            return item;
+        })
+        return res.status(200).json({ result: cartWithImagePaths, code: 200, success: true });
     }
     catch (error) {
         return res.status(500).json({ message: 'Server Error' })
@@ -89,7 +109,7 @@ router.put('/cart/update/:id', async (req, res) => {
         }
     }
     catch (error) {
-        return res.status(500).json({ message: 'Server Error',success: false })
+        return res.status(500).json({ message: 'Server Error', success: false })
     }
 })
 // Delete Cart
