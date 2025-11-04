@@ -7,6 +7,9 @@ const productSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
+    subTitle: {
+        type: String,
+    },
     sku: { type: String, required: [true, 'Sku is required'] },
     warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouse', required: [true, 'Warehouse is required'] },
     productMaterial: { type: String, requied: [true, 'Material is required'] },
@@ -62,7 +65,7 @@ const productSchema = new mongoose.Schema({
     totalStock: { type: Number, default: 0, required: true, },
     inStock: { type: Boolean, default: true },
     isFeatured: { type: Boolean, default: false }, //Highlight for Home Page
-},{ timestamps: true });
+}, { timestamps: true });
 productSchema.index(
     { productName: 1, category: 1, gender: 1, sku: 1 },
     { unique: true }
