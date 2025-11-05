@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const wishLists = require('../model/wishlistModel');
+const Products = require('../model/ProductModel')
 
 // Save wishlist
 router.post('/wishList/post', async (req, res) => {
@@ -11,6 +12,7 @@ router.post('/wishList/post', async (req, res) => {
             return res.status(400).json({ message: 'Product already exists for this user', result: [], success: false, });
         }
         const newWishList = new wishLists({ userId, productId });
+        await Products.findByIdAndUpdate(productId, { isWishlisted: true });
         await newWishList.save();
         return res.status(200).json({ message: 'Product Added successfully', result: newWishList, code: 200, success: true, });
     }
