@@ -43,6 +43,7 @@ router.put('/wishList/update/:id', async (req, res) => {
 // Get WishList
 router.get('/wishList/get', async (req, res) => {
     try {
+        const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
         const getAll = await wishLists.find().populate('productId').populate('userId');
         const unwantedUser = getAll.filter(item => item.userId == null || item.productId == null)
         if (unwantedUser) {
@@ -50,7 +51,26 @@ router.get('/wishList/get', async (req, res) => {
             await wishLists.deleteMany({ _id: { $in: idsToDelete } });
         }
         const cleanWishlist = await wishLists.find().populate('productId').populate('userId');
-        return res.status(200).json({ result: cleanWishlist, code: 200, success: true, })
+        const wishlistWithImagePaths = cleanWishlist.map(item => {
+            const product = item.productId;
+            if (product) {
+                // ✅ Fix main image
+                if (product.images) {
+                    if (!product.images.startsWith('http')) {
+                        product.images = `${baseURL}${product.images}`;
+                    }
+                }
+
+                // ✅ Fix gallery array
+                if (product.gallery && Array.isArray(product.gallery)) {
+                    product.gallery = product.gallery.map(img =>
+                        img.startsWith('http') ? img : `${baseURL}${img}`
+                    );
+                }
+            }
+            return item;
+        })
+        return res.status(200).json({ result: wishlistWithImagePaths, code: 200, success: true, })
     }
     catch (error) {
         res.status(500).json({ message: 'Server Error' })
