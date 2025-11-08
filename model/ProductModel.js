@@ -10,6 +10,10 @@ const productSchema = new mongoose.Schema({
     subTitle: {
         type: String,
     },
+    isWishlisted: {
+        type: Boolean,
+        default: false
+    },
     sku: { type: String, required: [true, 'Sku is required'] },
     warehouse: { type: mongoose.Schema.Types.ObjectId, ref: 'warehouse', required: [true, 'Warehouse is required'] },
     productMaterial: { type: String, requied: [true, 'Material is required'] },

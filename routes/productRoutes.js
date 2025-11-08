@@ -247,18 +247,23 @@ router.get('/getProducts', async (req, res) => {
 
 // Get ByID
 router.get('/getByIDProducts/:id', async (req, res) => {
-    const {prodID} = req.params.id
+    const prodID = req.params.id
     try {
-        const products = await Products.findById(prodID);        
-        // Reload cleaned product list
-        // const cleanProducts = await Products.find().populate('category').populate('gender');
-        // const finalProducts = cleanProducts.map(item => {
-        //     return {
-        //         ...item._doc,
-        //         images: item.images ? hostURL + item.images : null, //image name with url set
-        //         gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
-        //     }
-        // });
+        const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
+        const products = await Products.findById(prodID);
+        console.log('products: ', products);
+        if (products.images) {
+            if (!products.images.startsWith('http')) {
+                products.images = `${baseURL}${products.images}`;
+            }
+        }
+
+        // ✅ Fix gallery array
+        if (products.gallery && Array.isArray(products.gallery)) {
+            products.gallery = products.gallery.map(img =>
+                img.startsWith('http') ? img : `${baseURL}${img}`
+            );
+        }
 
         return res.status(200).json({ result: products, code: 200, success: true });
     } catch (error) {
