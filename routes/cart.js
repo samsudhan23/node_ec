@@ -10,31 +10,62 @@ router.post('/cart/add', async (req, res) => {
         if (!product) {
             return res.status(404).json({ message: 'Product not found', result: [] });
         }
-        const getSizeQuantity = product.sizeStock.filter(val => val.size == selectedSize)
-        if (getSizeQuantity[0].stock < quantity) {
-            return res.status(400).json({ message: 'Quantity is more than the product stock', result: [], status: false })
+        // Find stock for the selected size
+        const sizeInfo = product.sizeStock.find(val => val.size === selectedSize);
+        if (!sizeInfo) {
+            return res.status(400).json({ message: 'Selected size not available', result: [], status: false });
         }
 
+        const availableStock = sizeInfo.stock;
+        // Find existing cart item
         const existingCartItem = await Cart.findOne({ userId, productId, selectedSize });
         if (existingCartItem) {
-            existingCartItem.quantity += quantity;
+            const newQuantity = existingCartItem.quantity + quantity;
+            // Check stock before updating
+            if (newQuantity > availableStock) {
+                return res.status(400).json({
+                    message: `Only ${availableStock} item(s) available in stock for size ${selectedSize}`,
+                    result: [],
+                    status: false
+                });
+            }
+            existingCartItem.quantity = newQuantity;
             await existingCartItem.save();
-            return res.status(200).json({ message: 'Product quantity updated in cart', result: existingCartItem, code: 200, success: true, });
+            return res.status(200).json({
+                message: 'Cart quantity updated successfully',
+                result: existingCartItem,
+                code: 200,
+                success: true,
+            });
         } else {
+            // For new cart entry
+            if (quantity > availableStock) {
+                return res.status(400).json({
+                    message: `Only ${availableStock} item(s) available in stock for size ${selectedSize}`,
+                    result: [],
+                    status: false
+                });
+            }
             const newProductCart = new Cart({ userId, productId, quantity, selectedSize });
             await newProductCart.save();
-            return res.status(200).json({ message: 'Product added to your Cart successfully', result: newProductCart, code: 200, success: true, });
-        }
-    }
-    catch (error) {
-        return res.status(500).json({ message: 'Server Error' })
-    }
 
-})
+            return res.status(200).json({
+                message: 'Product added to your Cart successfully',
+                result: newProductCart,
+                code: 200,
+                success: true,
+            });
+        }
+    } catch (error) {
+        console.error('Cart add error:', error);
+        return res.status(500).json({ message: 'Server Error' });
+    }
+});
+
 // Cart List
 router.get('/cart/get', async (req, res) => {
     try {
-         const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
+        const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
         const cartItems = await Cart.find().populate('productId').populate('userId').populate('categoryID');
         const unwantedUser = cartItems.filter(item => item.userId == null || item.productId == null)
         if (unwantedUser) {
