@@ -4,7 +4,7 @@ const PoModel = require('../model/purchaseOrderModel');
 
 router.get('/getPurchaseOrderList', async (req, res) => {
     try {
-        const getOrderList = await PoModel.find();
+        const getOrderList = await PoModel.find().populate('supplierId');
         return res.status(200).json({ result: getOrderList, code: 200, status: true })
     }
     catch (err) {
