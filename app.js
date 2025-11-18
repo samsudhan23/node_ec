@@ -19,6 +19,7 @@ const wareHouseRoutes = require('./routes/warehouseRoutes');
 const supplierRoutes = require('./routes/supplierRoutes');
 const purchaseOrderRouted = require('./routes/purchaseOrderRoutes');
 const notifyRouted = require('./routes/NotifyRoutes');
+const deliveryAddressRoutes = require('./routes/deliveryAddressRoutes');
 
 dotenv.config();
 const app = express();
@@ -44,6 +45,7 @@ app.use('/api', wareHouseRoutes);
 app.use('/api', supplierRoutes);
 app.use('/api', purchaseOrderRouted);
 app.use('/api', notifyRouted);
+app.use('/api', deliveryAddressRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;
