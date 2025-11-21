@@ -42,17 +42,27 @@ router.put('/wishList/update/:id', async (req, res) => {
         return res.status(500).json({ message: 'Server Error' })
     }
 })
-// Get WishList
+// Get WishList (with optional userId filter)
 router.get('/wishList/get', async (req, res) => {
     try {
+        const { userId } = req.query;
         const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
-        const getAll = await wishLists.find().populate('productId').populate('userId');
+        
+        // Build query - filter by userId if provided
+        let query = {};
+        if (userId) {
+            query.userId = userId;
+        }
+        
+        const getAll = await wishLists.find(query).populate('productId').populate('userId');
         const unwantedUser = getAll.filter(item => item.userId == null || item.productId == null)
-        if (unwantedUser) {
+        if (unwantedUser && unwantedUser.length > 0) {
             const idsToDelete = unwantedUser.map(item => item._id)
             await wishLists.deleteMany({ _id: { $in: idsToDelete } });
         }
-        const cleanWishlist = await wishLists.find().populate('productId').populate('userId');
+        
+        // Re-fetch after cleanup
+        const cleanWishlist = await wishLists.find(query).populate('productId').populate('userId');
         const wishlistWithImagePaths = cleanWishlist.map(item => {
             const product = item.productId;
             if (product) {

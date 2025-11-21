@@ -62,17 +62,27 @@ router.post('/cart/add', async (req, res) => {
     }
 });
 
-// Cart List
+// Cart List (with optional userId filter)
 router.get('/cart/get', async (req, res) => {
     try {
+        const { userId } = req.query;
         const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
-        const cartItems = await Cart.find().populate('productId').populate('userId').populate('categoryID');
+        
+        // Build query - filter by userId if provided
+        let query = {};
+        if (userId) {
+            query.userId = userId;
+        }
+        
+        const cartItems = await Cart.find(query).populate('productId').populate('userId').populate('categoryID');
         const unwantedUser = cartItems.filter(item => item.userId == null || item.productId == null)
-        if (unwantedUser) {
+        if (unwantedUser && unwantedUser.length > 0) {
             const idsToDelete = unwantedUser.map(item => item._id)
             await Cart.deleteMany({ _id: { $in: idsToDelete } });
         }
-        const clearCartList = await Cart.find().populate('productId').populate('userId').populate('categoryID');
+        
+        // Re-fetch after cleanup
+        const clearCartList = await Cart.find(query).populate('productId').populate('userId').populate('categoryID');
         const cartWithImagePaths = clearCartList.map(item => {
             const product = item.productId;
             if (product) {

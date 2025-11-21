@@ -57,6 +57,28 @@ router.post('/deliveryAddress/add', async (req, res) => {
     }
 });
 
+// Get all delivery addresses (for admin)
+router.get('/deliveryAddress/getAll', async (req, res) => {
+    try {
+        const addresses = await DeliveryAddress.find()
+            .populate('userId', 'name email phoneNumber')
+            .sort({ createdAt: -1 }); // Sort by creation date
+
+        return res.status(200).json({ 
+            result: addresses, 
+            code: 200, 
+            success: true 
+        });
+    } catch (error) {
+        console.error('Delivery address getAll error:', error);
+        return res.status(500).json({ 
+            message: 'Server Error', 
+            code: 500, 
+            success: false 
+        });
+    }
+});
+
 // Get all delivery addresses for a user
 router.get('/deliveryAddress/get/:userId', async (req, res) => {
     try {
