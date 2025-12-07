@@ -43,6 +43,49 @@ router.get('/genderList', async (req, res) => {
     }
 })
 
+// Update Gender
+router.put('/updateGender/:id', async (req, res) => {
+    const { genderName } = req.body;
+    try {
+        const updateGender = await Gender.findById(req.params.id);
+        if (!updateGender || updateGender.length === 0) {
+            return res.status(404).json({ message: "Gender doesn't exists", result: [] })
+        }
+        // Check Existing Gender
+        const slug = slugify(genderName, { lower: true });
+        const existing = await Gender.findOne({ slug, _id: { $ne: req.params.id } });
+        if (existing) {
+            return res.status(400).json({ message: 'Gender already exists' })
+        }
+        req.body.slug = slug;
+        const updateGen = await Gender.findByIdAndUpdate(req.params.id, {
+            $set: req.body
+        }, { new: true });
+
+        return res.status(200).json({ result: updateGen, code: 200, success: true, message: 'Gender Updated successfully', })
+    }
+    catch (error) {
+        res.status(500).json({ message: error, code: 500, success: false, });
+    }
+})
+
+// Delete Gender
+router.post('/deleteGender', async (req, res) => {
+    const { ids } = req.body
+    try {
+        const gender = await Gender.find({ _id: { $in: ids } });
+        if (!gender || gender.length === 0) {
+            return res.status(404).json({ message: "Gender doesn't exists", result: [] })
+        }
+        await Gender.deleteMany({ _id: { $in: ids } });
+
+        return res.status(200).json({ code: 200, success: true, message: 'Gender Deleted successfully', })
+    }
+    catch (error) {
+        return res.status(500).json({ message: 'Server Error' });
+    }
+})
+
 // Category API
 router.post('/categories', async (req, res) => {
     const { categoryName, categoryDescription } = req.body;

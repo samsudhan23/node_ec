@@ -89,6 +89,14 @@ router.put('/updateProducts/:id', uploadFiles.fields([
 ]), async (req, res) => {
     const { productName, category, gender } = req.body;
     try {
+        // Normalize discountPrice if it comes as an array (FormData duplicate key issue)
+        if (Array.isArray(req.body.discountPrice)) {
+            req.body.discountPrice = req.body.discountPrice.length > 0 
+                ? parseFloat(req.body.discountPrice[req.body.discountPrice.length - 1]) || 0 
+                : 0;
+        } else if (req.body.discountPrice !== undefined && req.body.discountPrice !== null && req.body.discountPrice !== '') {
+            req.body.discountPrice = parseFloat(req.body.discountPrice) || 0;
+        }
         const products = await Products.findById(req.params.id);
         if (!products || products.length === 0) {
             deleteUploadedFiles(req.files)

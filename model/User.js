@@ -6,9 +6,15 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  gender: {
+    type: String,
+  },
   phoneNumber: {
     type: Number,
     required: true
+  },
+  altPhoneNumber: {
+    type: String,
   },
   email: {
     type: String,
@@ -35,8 +41,33 @@ const UserSchema = new mongoose.Schema({
     enum: ['admin', 'user'],
     default: 'user'
   },
-  dateOfBirth:{
-    type:Date,
+  dateOfBirth: {
+    type: Date,
+  },
+  avatar: {
+    data: Buffer,
+    contentType: String,
+  },
+  addressLine1: {
+    type: String,
+  },
+  streetLocality: {
+    type: String,
+  },
+  addressLine2: {
+    type: String,
+  },
+  city: {
+    type: String,
+  },
+  state: {
+    type: String,
+  },
+  pincode: {
+    type: String,
+  },
+  country: {
+    type: String,
   }
 }, { timestamps: true })
 

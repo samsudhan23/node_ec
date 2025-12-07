@@ -24,7 +24,9 @@ const productSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
-    discountPrice: Number,
+    discountPrice: {
+        type: Number,
+    },
     // slug: { type: String, required: true },
     gallery: {
         type: [String],
