@@ -7,7 +7,11 @@ const storage = multer.diskStorage({
         cb(null, 'assets/Products')
     },
     filename: (req, file, cb) => {
-        cb(null, Date.now() + path.extname(file.originalname)) //extname --> it gives extension of files
+        // Use the actual filename from the uploaded file
+        // Sanitize filename: replace spaces with underscores and remove special characters
+        const originalName = file.originalname;
+        const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\s+/g, '_');
+        cb(null, sanitizedName);
     }
 })
 const upload = multer({ storage: storage })

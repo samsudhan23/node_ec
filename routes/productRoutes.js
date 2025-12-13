@@ -37,6 +37,7 @@ router.post('/products', uploadFiles.fields([
 ]), async (req, res) => {
     const { category, productName, gender, totalStock } = req.body;
     try {
+        const hostURL = 'http://localhost:5000/assets/Products/';
         const isInvalidField = (value) => !value || value.trim() === '' || value == 0;
         // Check Category(Validation)
         if (isInvalidField(category)) {
@@ -62,12 +63,13 @@ router.post('/products', uploadFiles.fields([
             return res.status(400).json({ message: 'Product already exists for this gender and category' })
         }
         if (req.files && req.files['images'] && req.files['images'][0]) {
-            req.body.images = req.files['images'][0].filename;
+            req.body.images = `${hostURL + req.files['images'][0].filename}`;
         }
         if (req.files && req.files['gallery']) {
-            req.body.gallery = req.files['gallery'].map(file => file.filename);
+            req.body.gallery = req.files['gallery'].map(file => `${hostURL + file.filename}`);
         }
         req.body.sku = await generateSku();
+        console.log('req.body: ', req.body);
         const newProduct = new Products(req.body)
         await newProduct.save();
         return res.status(200).json({ message: 'Product created successfully', result: newProduct, code: 200, success: true, });
@@ -91,8 +93,8 @@ router.put('/updateProducts/:id', uploadFiles.fields([
     try {
         // Normalize discountPrice if it comes as an array (FormData duplicate key issue)
         if (Array.isArray(req.body.discountPrice)) {
-            req.body.discountPrice = req.body.discountPrice.length > 0 
-                ? parseFloat(req.body.discountPrice[req.body.discountPrice.length - 1]) || 0 
+            req.body.discountPrice = req.body.discountPrice.length > 0
+                ? parseFloat(req.body.discountPrice[req.body.discountPrice.length - 1]) || 0
                 : 0;
         } else if (req.body.discountPrice !== undefined && req.body.discountPrice !== null && req.body.discountPrice !== '') {
             req.body.discountPrice = parseFloat(req.body.discountPrice) || 0;
@@ -109,14 +111,19 @@ router.put('/updateProducts/:id', uploadFiles.fields([
             deleteUploadedFiles(req.files)
             return res.status(400).json({ message: "A product with the same name already exists in this category and gender.", result: [] })
         }
+        const hostURL = 'http://localhost:5000/assets/Products/';
         if (req.files && req.files['images'] && req.files['images'][0]) {
             if (products.images) {
-                const oldPath = path.join(__dirname, '../assets/Products', products.images);
+                // Extract filename from URL if it's a full URL, otherwise use as is
+                const oldImageName = products.images.includes('http') 
+                    ? products.images.split('/').pop() 
+                    : products.images.replace(hostURL, '');
+                const oldPath = path.join(__dirname, '../assets/Products', oldImageName);
                 if (fs.existsSync(oldPath)) {
                     fs.unlinkSync(oldPath);
                 }
-                req.body.images = req.files['images'][0].filename;
             }
+            req.body.images = `${hostURL + req.files['images'][0].filename}`;
         }
         if (req.files && req.files['gallery']) {
             // Get retained gallery images from frontend
@@ -125,14 +132,26 @@ router.put('/updateProducts/:id', uploadFiles.fields([
                 existingGallery = [existingGallery]; // normalize
             }
 
-            // Get new uploaded filenames
-            const newGalleryFiles = req.files['gallery'].map(file => file.filename);
-            req.body.gallery = [...existingGallery, ...newGalleryFiles];
+            // Get new uploaded filenames with hostURL
+            const newGalleryFiles = req.files['gallery'].map(file => `${hostURL + file.filename}`);
+            // Ensure existing gallery items have full URLs
+            const existingGalleryWithURL = existingGallery.map(img => 
+                img.startsWith('http') ? img : `${hostURL + img}`
+            );
+            req.body.gallery = [...existingGalleryWithURL, ...newGalleryFiles];
 
             // 🔁 Delete only images that were removed (i.e., in DB but not in existingGallery)
             if (products.gallery && products.gallery.length > 0) {
-                const removed = products.gallery.filter(
-                    oldImg => !existingGallery.includes(oldImg)
+                // Extract filenames from products.gallery (might be URLs or filenames)
+                const productGalleryFilenames = products.gallery.map(img => 
+                    img.includes('http') ? img.split('/').pop() : img
+                );
+                const existingGalleryFilenames = existingGallery.map(img => 
+                    img.includes('http') ? img.split('/').pop() : img
+                );
+                
+                const removed = productGalleryFilenames.filter(
+                    oldImg => !existingGalleryFilenames.includes(oldImg)
                 );
                 removed.forEach(oldImage => {
                     const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
@@ -148,18 +167,32 @@ router.put('/updateProducts/:id', uploadFiles.fields([
                 existingGallery = [existingGallery];
             }
 
-            // Delete removed ones
-            const removed = products.gallery.filter(
-                oldImg => !existingGallery.includes(oldImg)
+            // Ensure existing gallery items have full URLs
+            const existingGalleryWithURL = existingGallery.map(img => 
+                img.startsWith('http') ? img : `${hostURL + img}`
             );
-            removed.forEach(oldImage => {
-                const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                if (fs.existsSync(oldImagePath)) {
-                    fs.unlinkSync(oldImagePath);
-                }
-            });
 
-            req.body.gallery = existingGallery;
+            // Delete removed ones
+            if (products.gallery && products.gallery.length > 0) {
+                const productGalleryFilenames = products.gallery.map(img => 
+                    img.includes('http') ? img.split('/').pop() : img
+                );
+                const existingGalleryFilenames = existingGallery.map(img => 
+                    img.includes('http') ? img.split('/').pop() : img
+                );
+                
+                const removed = productGalleryFilenames.filter(
+                    oldImg => !existingGalleryFilenames.includes(oldImg)
+                );
+                removed.forEach(oldImage => {
+                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                    if (fs.existsSync(oldImagePath)) {
+                        fs.unlinkSync(oldImagePath);
+                    }
+                });
+            }
+
+            req.body.gallery = existingGalleryWithURL;
         } else {
             // No gallery files at all, so clear it
             req.body.gallery = [];
@@ -171,6 +204,7 @@ router.put('/updateProducts/:id', uploadFiles.fields([
         return res.status(200).json({ result: updateProducts, code: 200, success: true, message: 'Product Updated successfully', })
     }
     catch (error) {
+        console.log('error: ', error);
         // deleteUploadedFiles(req.files)
         res.status(500).json({ message: 'Server Error' });
     }
@@ -184,23 +218,23 @@ router.post('/deleteProducts', async (req, res) => {
             return res.status(404).json({ message: "Product doesn't exists", result: [], success: false })
         }
         await Products.deleteMany({ _id: { $in: ids } });
-        for (let i = 0; i < products.length; i++) {
-            if (products[i].images) {
-                const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
-                if (fs.existsSync(oldPath)) {
-                    fs.unlinkSync(oldPath);
-                }
-                // req.body.images = req.files['images'][0].filename;
-            }
-            if (products[i].gallery && products[i].gallery.length > 0) {
-                products[i].gallery.forEach(oldImage => {
-                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                    if (fs.existsSync(oldImagePath)) {
-                        fs.unlinkSync(oldImagePath);
-                    }
-                });
-            }
-        }
+        // for (let i = 0; i < products.length; i++) {
+        //     if (products[i].images) {
+        //         const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
+        //         if (fs.existsSync(oldPath)) {
+        //             fs.unlinkSync(oldPath);
+        //         }
+        //         // req.body.images = req.files['images'][0].filename;
+        //     }
+        //     if (products[i].gallery && products[i].gallery.length > 0) {
+        //         products[i].gallery.forEach(oldImage => {
+        //             const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+        //             if (fs.existsSync(oldImagePath)) {
+        //                 fs.unlinkSync(oldImagePath);
+        //             }
+        //         });
+        //     }
+        // }
         return res.status(200).json({ code: 200, success: true, message: 'Product Deleted successfully', })
     }
     catch (error) {
@@ -211,43 +245,43 @@ router.post('/deleteProducts', async (req, res) => {
 router.get('/getProducts', async (req, res) => {
     try {
         const products = await Products.find().populate('category').populate('gender');
-        const hostURL = 'http://localhost:5000/assets/Products/';
+        // const hostURL = 'http://localhost:5000/assets/Products/';
         // Delete products with missing categories
         const withoutCategory = products.filter(item => item.category == null);
         if (withoutCategory.length > 0) {
             const idsToDelete = withoutCategory.map(item => item._id);
 
             // await Products.deleteMany({ _id: { $in: idsToDelete } });
-            for (let i = 0; i < withoutCategory.length; i++) {
-                if (withoutCategory[i].images) {
-                    const oldPath = path.join(__dirname, '../assets/Products', withoutCategory[i].images);
-                    if (fs.existsSync(oldPath)) {
-                        fs.unlinkSync(oldPath);
-                    }
-                    // req.body.images = req.files['images'][0].filename;
-                }
-                if (withoutCategory[i].gallery && withoutCategory[i].gallery.length > 0) {
-                    withoutCategory[i].gallery.forEach(oldImage => {
-                        const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                        if (fs.existsSync(oldImagePath)) {
-                            fs.unlinkSync(oldImagePath);
-                        }
-                    });
-                }
-            }
+            // for (let i = 0; i < withoutCategory.length; i++) {
+            //     if (withoutCategory[i].images) {
+            //         const oldPath = path.join(__dirname, '../assets/Products', withoutCategory[i].images);
+            //         if (fs.existsSync(oldPath)) {
+            //             fs.unlinkSync(oldPath);
+            //         }
+            //         // req.body.images = req.files['images'][0].filename;
+            //     }
+            //     if (withoutCategory[i].gallery && withoutCategory[i].gallery.length > 0) {
+            //         withoutCategory[i].gallery.forEach(oldImage => {
+            //             const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+            //             if (fs.existsSync(oldImagePath)) {
+            //                 fs.unlinkSync(oldImagePath);
+            //             }
+            //         });
+            //     }
+            // }
             await Products.deleteMany({ _id: { $in: idsToDelete } });
         }
         // Reload cleaned product list
         const cleanProducts = await Products.find().populate('category').populate('gender');
-        const finalProducts = cleanProducts.map(item => {
-            return {
-                ...item._doc,
-                images: item.images ? hostURL + item.images : null, //image name with url set
-                gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
-            }
-        });
+        // const finalProducts = cleanProducts.map(item => {
+        //     return {
+        //         ...item._doc,
+        //         images: item.images ? hostURL + item.images : null, //image name with url set
+        //         gallery: item.gallery ? item.gallery.map(img => hostURL + img) : []
+        //     }
+        // });
 
-        return res.status(200).json({ result: finalProducts, code: 200, success: true });
+        return res.status(200).json({ result: cleanProducts, code: 200, success: true });
     } catch (error) {
         res.status(500).json({ message: 'Server Error' });
     }
