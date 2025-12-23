@@ -30,6 +30,34 @@ const deleteUploadedFiles = (files) => {
     }
 };
 
+// Helper function to extract filename from URL or path
+const extractFileName = (imagePath) => {
+    if (imagePath.includes('http')) {
+        return imagePath.split('/').pop();
+    }
+    return imagePath.replace('http://localhost:5000/assets/Products/', '');
+};
+
+// Helper function to check if image is used by other products
+const isImageUsedByOtherProducts = async (imageName, excludeId = null) => {
+    const imageUrl = `http://localhost:5000/assets/Products/${imageName}`;
+    const query = {
+        $or: [
+            { images: imageName },
+            { images: imageUrl },
+            { gallery: imageName },
+            { gallery: imageUrl }
+        ]
+    };
+    
+    if (excludeId) {
+        query._id = { $ne: excludeId };
+    }
+    
+    const product = await Products.findOne(query);
+    return !!product;
+};
+
 /* create new product */
 router.post('/products', uploadFiles.fields([
     { name: 'images', maxCount: 1 },
@@ -115,12 +143,15 @@ router.put('/updateProducts/:id', uploadFiles.fields([
         if (req.files && req.files['images'] && req.files['images'][0]) {
             if (products.images) {
                 // Extract filename from URL if it's a full URL, otherwise use as is
-                const oldImageName = products.images.includes('http') 
-                    ? products.images.split('/').pop() 
-                    : products.images.replace(hostURL, '');
-                const oldPath = path.join(__dirname, '../assets/Products', oldImageName);
-                if (fs.existsSync(oldPath)) {
-                    fs.unlinkSync(oldPath);
+                const oldImageName = extractFileName(products.images);
+                // Check if image is used by other products before deleting
+                const isUsed = await isImageUsedByOtherProducts(oldImageName, req.params.id);
+                
+                if (!isUsed) {
+                    const oldPath = path.join(__dirname, '../assets/Products', oldImageName);
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
                 }
             }
             req.body.images = `${hostURL + req.files['images'][0].filename}`;
@@ -153,12 +184,16 @@ router.put('/updateProducts/:id', uploadFiles.fields([
                 const removed = productGalleryFilenames.filter(
                     oldImg => !existingGalleryFilenames.includes(oldImg)
                 );
-                removed.forEach(oldImage => {
-                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                    if (fs.existsSync(oldImagePath)) {
-                        fs.unlinkSync(oldImagePath);
+                // Delete removed images only if not used by other products
+                for (const oldImage of removed) {
+                    const isUsed = await isImageUsedByOtherProducts(oldImage, req.params.id);
+                    if (!isUsed) {
+                        const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                        }
                     }
-                });
+                }
             }
         } else if (req.body.existingGallery) {
             // No new files, only keep existing ones
@@ -184,12 +219,16 @@ router.put('/updateProducts/:id', uploadFiles.fields([
                 const removed = productGalleryFilenames.filter(
                     oldImg => !existingGalleryFilenames.includes(oldImg)
                 );
-                removed.forEach(oldImage => {
-                    const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-                    if (fs.existsSync(oldImagePath)) {
-                        fs.unlinkSync(oldImagePath);
+                // Delete removed images only if not used by other products
+                for (const oldImage of removed) {
+                    const isUsed = await isImageUsedByOtherProducts(oldImage, req.params.id);
+                    if (!isUsed) {
+                        const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                        }
                     }
-                });
+                }
             }
 
             req.body.gallery = existingGalleryWithURL;
@@ -217,24 +256,55 @@ router.post('/deleteProducts', async (req, res) => {
         if (!products || products.length === 0) {
             return res.status(404).json({ message: "Product doesn't exists", result: [], success: false })
         }
+        
+        // Helper function to check if image is used by other products (for delete route)
+        const isImageUsedByOtherProductsForDelete = async (imageName, excludeIds) => {
+            const imageUrl = `http://localhost:5000/assets/Products/${imageName}`;
+            const product = await Products.findOne({
+                _id: { $nin: excludeIds },
+                $or: [
+                    { images: imageName },
+                    { images: imageUrl },
+                    { gallery: imageName },
+                    { gallery: imageUrl }
+                ]
+            });
+            return !!product;
+        };
+        
+        // Delete image files before deleting from database
+        for (let i = 0; i < products.length; i++) {
+            // Delete main image only if not used by other products
+            if (products[i].images) {
+                const imageName = extractFileName(products[i].images);
+                const isUsed = await isImageUsedByOtherProductsForDelete(imageName, ids);
+                
+                if (!isUsed) {
+                    const oldPath = path.join(__dirname, '../assets/Products', imageName);
+                    if (fs.existsSync(oldPath)) {
+                        fs.unlinkSync(oldPath);
+                    }
+                }
+            }
+            
+            // Delete gallery images only if not used by other products
+            if (products[i].gallery && products[i].gallery.length > 0) {
+                for (const oldImage of products[i].gallery) {
+                    const galleryImageName = extractFileName(oldImage);
+                    const isUsed = await isImageUsedByOtherProductsForDelete(galleryImageName, ids);
+                    
+                    if (!isUsed) {
+                        const oldImagePath = path.join(__dirname, '../assets/Products', galleryImageName);
+                        if (fs.existsSync(oldImagePath)) {
+                            fs.unlinkSync(oldImagePath);
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Delete products from database after files are deleted
         await Products.deleteMany({ _id: { $in: ids } });
-        // for (let i = 0; i < products.length; i++) {
-        //     if (products[i].images) {
-        //         const oldPath = path.join(__dirname, '../assets/Products', products[i].images);
-        //         if (fs.existsSync(oldPath)) {
-        //             fs.unlinkSync(oldPath);
-        //         }
-        //         // req.body.images = req.files['images'][0].filename;
-        //     }
-        //     if (products[i].gallery && products[i].gallery.length > 0) {
-        //         products[i].gallery.forEach(oldImage => {
-        //             const oldImagePath = path.join(__dirname, '../assets/Products', oldImage);
-        //             if (fs.existsSync(oldImagePath)) {
-        //                 fs.unlinkSync(oldImagePath);
-        //             }
-        //         });
-        //     }
-        // }
         return res.status(200).json({ code: 200, success: true, message: 'Product Deleted successfully', })
     }
     catch (error) {
