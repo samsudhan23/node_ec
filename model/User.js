@@ -45,8 +45,7 @@ const UserSchema = new mongoose.Schema({
     type: Date,
   },
   avatar: {
-    data: Buffer,
-    contentType: String,
+    type: String,
   },
   addressLine1: {
     type: String,

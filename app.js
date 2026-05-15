@@ -1,12 +1,12 @@
+require('dotenv').config();
+
 const express = require('express');
-const cors = require('cors')
-const bodyParser = require('body-parser')
-const dotenv = require("dotenv");
-const connectDB = require('./config/db')
-const path = require("path");
+const cors = require('cors');
+const bodyParser = require('body-parser');
+const connectDB = require('./config/db');
+const cloudinary = require('./utils/cloudinary');
 
-
-// Import Routes
+// Import Routes (after dotenv so Cloudinary credentials are available)
 const routes = require('./routes/auth');
 const caregoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoutes');
@@ -21,16 +21,28 @@ const purchaseOrderRouted = require('./routes/purchaseOrderRoutes');
 const notifyRouted = require('./routes/NotifyRoutes');
 const deliveryAddressRoutes = require('./routes/deliveryAddressRoutes');
 
-dotenv.config();
+if (!process.env.CLOUD_NAME || !process.env.API_KEY || !process.env.API_SECRET) {
+    console.error('Missing Cloudinary env vars: CLOUD_NAME, API_KEY, API_SECRET');
+} else if (!cloudinary.config().cloud_name) {
+    console.error('Cloudinary failed to initialize. Check your .env file.');
+} else {
+    console.log(`Cloudinary ready (cloud: ${cloudinary.config().cloud_name})`);
+}
+
 const app = express();
 connectDB();
 app.use(express.json());
 app.use(cors());
 app.use(bodyParser.json());
 
-// Image decleare statically
-const folderLocation = path.join(__dirname, "assets/Products");
-app.use("/assets/Products", express.static(folderLocation))
+app.get('/api/health/upload', (req, res) => {
+    const config = cloudinary.config();
+    res.json({
+        storage: 'cloudinary',
+        cloudName: config.cloud_name || null,
+        configured: Boolean(config.cloud_name && config.api_key && config.api_secret),
+    });
+});
 
 // Routes
 app.use('/api', routes);
@@ -47,10 +59,8 @@ app.use('/api', purchaseOrderRouted);
 app.use('/api', notifyRouted);
 app.use('/api', deliveryAddressRoutes);
 
-// Start the server
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
     console.log(`Server running at http://localhost:${PORT}`);
 });
-

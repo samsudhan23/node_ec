@@ -1,7 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const wishLists = require('../model/wishlistModel');
-const Products = require('../model/ProductModel')
+const Products = require('../model/ProductModel');
+const { resolveProductImageUrl } = require('../utils/cloudinaryImage');
 
 // Save wishlist
 router.post('/wishList/post', async (req, res) => {
@@ -46,8 +47,6 @@ router.put('/wishList/update/:id', async (req, res) => {
 router.get('/wishList/get', async (req, res) => {
     try {
         const { userId } = req.query;
-        const baseURL = `${req.protocol}://${req.get('host')}/assets/Products/`;
-        
         // Build query - filter by userId if provided
         let query = {};
         if (userId) {
@@ -68,16 +67,11 @@ router.get('/wishList/get', async (req, res) => {
             if (product) {
                 // ✅ Fix main image
                 if (product.images) {
-                    if (!product.images.startsWith('http')) {
-                        product.images = `${baseURL}${product.images}`;
-                    }
+                    product.images = resolveProductImageUrl(product.images, req);
                 }
 
-                // ✅ Fix gallery array
                 if (product.gallery && Array.isArray(product.gallery)) {
-                    product.gallery = product.gallery.map(img =>
-                        img.startsWith('http') ? img : `${baseURL}${img}`
-                    );
+                    product.gallery = product.gallery.map((img) => resolveProductImageUrl(img, req));
                 }
             }
             return item;
