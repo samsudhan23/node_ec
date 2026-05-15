@@ -1,29 +1,27 @@
 const multer = require('multer');
-const path = require('path');
-const crypto = require('crypto');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('./cloudinary');
 
-const storage = multer.diskStorage({
-
-    destination: (req, file, cb) => {
-        cb(null, 'assets/Products')
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'ecommerce/products',
+        resource_type: 'auto',
     },
-    filename: (req, file, cb) => {
-        // Use the actual filename from the uploaded file
-        // Sanitize filename: replace spaces with underscores and remove special characters
-        const originalName = file.originalname;
-        const sanitizedName = originalName.replace(/[^a-zA-Z0-9.-]/g, '_').replace(/\s+/g, '_');
-        
-        // Add timestamp and random number to make filename unique
-        const timestamp = Date.now();
-        const randomNum = crypto.randomBytes(4).toString('hex');
-        const ext = path.extname(sanitizedName);
-        const nameWithoutExt = path.basename(sanitizedName, ext);
-        
-        // Format: originalname_timestamp_random.ext
-        const uniqueFileName = `${nameWithoutExt}_${timestamp}_${randomNum}${ext}`;
-        cb(null, uniqueFileName);
+});
+
+const fileFilter = (req, file, cb) => {
+    if (file.mimetype && file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed'), false);
     }
-})
-const upload = multer({ storage: storage })
+};
+
+const upload = multer({
+    storage,
+    fileFilter,
+    limits: { fileSize: 10 * 1024 * 1024 },
+});
 
 module.exports = upload;

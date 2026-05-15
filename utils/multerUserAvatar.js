@@ -1,24 +1,30 @@
 const multer = require('multer');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('./cloudinary');
 
-// Use memory storage to store file as buffer (binary data)
-const storage = multer.memoryStorage();
+const storage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'ecommerce/avatars',
+        resource_type: 'image',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+    },
+});
 
-// File filter to accept only images
 const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('Only image files are allowed'), false);
-  }
+    if (file.mimetype.startsWith('image/')) {
+        cb(null, true);
+    } else {
+        cb(new Error('Only image files are allowed'), false);
+    }
 };
 
 const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024 // 5MB limit
-  }
+    storage,
+    fileFilter,
+    limits: {
+        fileSize: 5 * 1024 * 1024,
+    },
 });
 
 module.exports = upload;
-
