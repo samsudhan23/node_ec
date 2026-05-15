@@ -7,12 +7,14 @@ const uploadFiles = require('../utils/multer');
 const { handleUpload } = require('../utils/uploadMiddleware');
 const {
     applyProductUploads,
+    getFileUrl,
     stripInvalidImageFields,
     deleteUploadedFiles,
     deleteCloudinaryAsset,
     isImageUsedByOtherProducts,
     resolveProductImageUrl,
     getImageReferences,
+    imageUrlMatches,
     isCloudinaryUrl,
 } = require('../utils/cloudinaryImage');
 
@@ -110,88 +112,67 @@ router.put('/updateProducts/:id', productUpload, async (req, res) => {
 
         const updatePayload = { ...req.body };
         delete updatePayload.existingGallery;
+        delete updatePayload.existingImage;
         stripInvalidImageFields(updatePayload);
 
-        try {
-            applyProductUploads(req, updatePayload);
-        } catch (uploadErr) {
-            await deleteUploadedFiles(req.files);
-            return res.status(400).json({ message: uploadErr.message });
+        let newGalleryUrls = [];
+        if (req.files?.gallery?.length) {
+            newGalleryUrls = req.files.gallery.map(getFileUrl);
+            if (newGalleryUrls.some((url) => !url)) {
+                await deleteUploadedFiles(req.files);
+                return res.status(400).json({ message: 'Gallery upload failed.' });
+            }
         }
 
+        // Main image: only replace when user explicitly uploads a new file
         if (req.files?.images?.[0]) {
+            const imageUrl = getFileUrl(req.files.images[0]);
+            if (!imageUrl) {
+                await deleteUploadedFiles(req.files);
+                return res.status(400).json({ message: 'Main image upload failed.' });
+            }
             if (products.images) {
                 const isUsed = await isImageUsedByOtherProducts(products.images, req.params.id);
                 if (!isUsed) {
                     await deleteCloudinaryAsset(products.images);
                 }
             }
+            updatePayload.images = imageUrl;
+        } else {
+            delete updatePayload.images;
+            const existingImage = req.body.existingImage;
+            if (existingImage && isCloudinaryUrl(existingImage)) {
+                updatePayload.images = existingImage;
+            }
         }
 
-        if (req.files?.gallery) {
-            let existingGallery = req.body.existingGallery || [];
-            if (!Array.isArray(existingGallery)) {
-                existingGallery = [existingGallery];
-            }
-
-            const newGalleryFiles = updatePayload.gallery || [];
-            const existingGalleryWithURL = existingGallery
+        const normalizeGalleryList = (list) => {
+            const raw = Array.isArray(list) ? list : list ? [list] : [];
+            return raw
                 .map((img) => resolveProductImageUrl(img, req))
                 .filter(isCloudinaryUrl);
+        };
 
-            updatePayload.gallery = [...existingGalleryWithURL, ...newGalleryFiles];
+        if (req.files?.gallery?.length || req.body.existingGallery) {
+            const existingGallery = normalizeGalleryList(req.body.existingGallery || []);
+            updatePayload.gallery = [...existingGallery, ...newGalleryUrls];
 
             if (products.gallery?.length > 0) {
-                const productGalleryFilenames = products.gallery.map((img) =>
-                    img.includes('http') ? img.split('/').pop() : img
-                );
-                const existingGalleryFilenames = existingGallery.map((img) =>
-                    img.includes('http') ? img.split('/').pop() : img
-                );
-
-                const removed = productGalleryFilenames.filter(
-                    (oldImg) => !existingGalleryFilenames.includes(oldImg)
+                const removed = products.gallery.filter(
+                    (oldImg) => !updatePayload.gallery.includes(oldImg)
                 );
 
                 for (const oldImage of removed) {
-                    const fullPath = products.gallery.find((img) => img.includes(oldImage)) || oldImage;
-                    const isUsed = await isImageUsedByOtherProducts(fullPath, req.params.id);
+                    if (oldImage === products.images) {
+                        continue;
+                    }
+                    const isUsed = await isImageUsedByOtherProducts(oldImage, req.params.id);
                     if (!isUsed) {
-                        await deleteCloudinaryAsset(fullPath);
+                        await deleteCloudinaryAsset(oldImage);
                     }
                 }
             }
-        } else if (req.body.existingGallery) {
-            let existingGallery = req.body.existingGallery;
-            if (!Array.isArray(existingGallery)) {
-                existingGallery = [existingGallery];
-            }
-
-            updatePayload.gallery = existingGallery
-                .map((img) => resolveProductImageUrl(img, req))
-                .filter(isCloudinaryUrl);
-
-            if (products.gallery?.length > 0) {
-                const productGalleryFilenames = products.gallery.map((img) =>
-                    img.includes('http') ? img.split('/').pop() : img
-                );
-                const existingGalleryFilenames = existingGallery.map((img) =>
-                    img.includes('http') ? img.split('/').pop() : img
-                );
-
-                const removed = productGalleryFilenames.filter(
-                    (oldImg) => !existingGalleryFilenames.includes(oldImg)
-                );
-
-                for (const oldImage of removed) {
-                    const fullPath = products.gallery.find((img) => img.includes(oldImage)) || oldImage;
-                    const isUsed = await isImageUsedByOtherProducts(fullPath, req.params.id);
-                    if (!isUsed) {
-                        await deleteCloudinaryAsset(fullPath);
-                    }
-                }
-            }
-        } else if (!updatePayload.gallery) {
+        } else {
             delete updatePayload.gallery;
         }
 
@@ -208,6 +189,101 @@ router.put('/updateProducts/:id', productUpload, async (req, res) => {
         res.status(500).json({ message: 'Server Error' });
     }
 });
+
+const deleteGalleryImageCore = async (productId, imageUrl, imageIndex) => {
+    const product = await Products.findById(productId);
+    if (!product) {
+        return { status: 404, body: { success: false, message: "Product doesn't exist" } };
+    }
+
+    let galleryIndex = -1;
+
+    if (imageUrl) {
+        galleryIndex = product.gallery.findIndex((img) => imageUrlMatches(img, imageUrl));
+    }
+
+    if (galleryIndex === -1 && imageIndex !== undefined && imageIndex !== null && imageIndex !== '') {
+        const idx = parseInt(imageIndex, 10);
+        if (!Number.isNaN(idx) && idx >= 0 && idx < product.gallery.length) {
+            galleryIndex = idx;
+        }
+    }
+
+    if (galleryIndex === -1) {
+        return {
+            status: 400,
+            body: {
+                success: false,
+                message: 'Image not found in this product gallery. Save the product and try again.',
+            },
+        };
+    }
+
+    const removedUrl = product.gallery[galleryIndex];
+
+    if (product.images && imageUrlMatches(product.images, removedUrl)) {
+        return {
+            status: 400,
+            body: { success: false, message: 'Cannot delete the main product image from gallery' },
+        };
+    }
+
+    if (product.gallery.length <= 1) {
+        return {
+            status: 400,
+            body: { success: false, message: 'At least one gallery image is required' },
+        };
+    }
+
+    product.gallery.splice(galleryIndex, 1);
+    await product.save();
+
+    const isUsedElsewhere = await isImageUsedByOtherProducts(removedUrl, product._id);
+    if (!isUsedElsewhere) {
+        await deleteCloudinaryAsset(removedUrl);
+    }
+
+    return {
+        status: 200,
+        body: {
+            success: true,
+            code: 200,
+            message: 'Gallery image deleted successfully',
+            result: product,
+        },
+    };
+};
+
+const deleteGalleryImageHandler = async (req, res) => {
+    const productId = req.params.id || req.body?.productId;
+    const imageUrl = (req.body?.imageUrl || req.query?.imageUrl || '').trim();
+    const imageIndex = req.body?.imageIndex;
+
+    if (!productId) {
+        return res.status(400).json({ success: false, message: 'productId is required' });
+    }
+
+    if (!imageUrl && (imageIndex === undefined || imageIndex === null || imageIndex === '')) {
+        return res.status(400).json({ success: false, message: 'imageUrl or imageIndex is required' });
+    }
+
+    try {
+        const outcome = await deleteGalleryImageCore(productId, imageUrl, imageIndex);
+        return res.status(outcome.status).json(outcome.body);
+    } catch (error) {
+        console.error('Delete gallery image error:', error);
+        return res.status(500).json({ success: false, message: 'Server Error' });
+    }
+};
+
+/** Primary endpoint — same style as deleteProducts */
+router.post('/deleteGalleryImage', async (req, res) => {
+    req.params = { id: req.body?.productId };
+    return deleteGalleryImageHandler(req, res);
+});
+
+router.post('/products/:id/delete-gallery-image', deleteGalleryImageHandler);
+router.delete('/products/:id/gallery-image', deleteGalleryImageHandler);
 
 /** Delete Products */
 router.post('/deleteProducts', async (req, res) => {

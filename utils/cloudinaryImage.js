@@ -158,6 +158,31 @@ const deleteCloudinaryAsset = async (imagePath) => {
     }
 };
 
+const normalizeImageUrl = (url) => {
+    if (!url || typeof url !== 'string') {
+        return '';
+    }
+    try {
+        return decodeURIComponent(url.trim()).split('?')[0].replace(/\/$/, '');
+    } catch {
+        return url.trim().split('?')[0].replace(/\/$/, '');
+    }
+};
+
+const imageUrlMatches = (stored, requested) => {
+    if (!stored || !requested) {
+        return false;
+    }
+    if (normalizeImageUrl(stored) === normalizeImageUrl(requested)) {
+        return true;
+    }
+    if (stored === requested) {
+        return true;
+    }
+    const storedRefs = new Set(getImageReferences(stored));
+    return getImageReferences(requested).some((ref) => storedRefs.has(ref));
+};
+
 const isImageUsedByOtherProducts = async (imagePath, excludeId = null) => {
     const refs = getImageReferences(imagePath);
     if (refs.length === 0) {
@@ -182,6 +207,7 @@ module.exports = {
     isLocalhostAssetUrl,
     extractPublicId,
     getImageReferences,
+    imageUrlMatches,
     resolveProductImageUrl,
     applyProductUploads,
     stripInvalidImageFields,

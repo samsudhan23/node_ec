@@ -41,6 +41,7 @@ app.get('/api/health/upload', (req, res) => {
         storage: 'cloudinary',
         cloudName: config.cloud_name || null,
         configured: Boolean(config.cloud_name && config.api_key && config.api_secret),
+        deleteGalleryImageRoute: 'POST /api/deleteGalleryImage',
     });
 });
 
