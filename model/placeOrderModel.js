@@ -26,12 +26,16 @@ const orderSchema = new mongoose.Schema({
                 type: Number,
                 required: true,
             },
+            productAmount: {
+                type: Number,
+                required: true,
+            },
             selectedSize: {
                 type: String,
             },
-            selectedColor: {
-                type: String,
-            },
+            // selectedColor: {
+            //     type: String,
+            // },
         },
     ],
     totalAmount: {
@@ -41,11 +45,13 @@ const orderSchema = new mongoose.Schema({
     shippingAddress: {
         fullName: { type: String, required: true },
         addressLine: { type: String, required: true },
+        landMark: { type: String, required: true },
         city: { type: String, required: true },
         state: { type: String, required: true },
         postalCode: { type: String, required: true },
         country: { type: String, required: true },
         phone: { type: String, required: true },
+        alternatePhoneNumber: { type: String, required: true },
     },
     paymentMethod: {
         type: String,
@@ -66,7 +72,7 @@ const orderSchema = new mongoose.Schema({
         type: Date,
         default: Date.now,
     },
-});
+}, { timestamps: true });
 
 module.exports = mongoose.model('Orders', orderSchema);
 

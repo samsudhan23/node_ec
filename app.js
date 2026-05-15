@@ -12,6 +12,14 @@ const caregoryRoutes = require('./routes/categoryRoutes');
 const productRoutes = require('./routes/productRoutes');
 const usersRoutes = require('./routes/userMangement');
 const cartRoutes = require('./routes/cart');
+const wishListRoutes = require('./routes/wishlistRoutes');
+const orderListRoutes = require('./routes/orderManagementRoutes');
+const productVariantRoutes = require('./routes/productVariantRoutes');
+const wareHouseRoutes = require('./routes/warehouseRoutes');
+const supplierRoutes = require('./routes/supplierRoutes');
+const purchaseOrderRouted = require('./routes/purchaseOrderRoutes');
+const notifyRouted = require('./routes/NotifyRoutes');
+const deliveryAddressRoutes = require('./routes/deliveryAddressRoutes');
 
 dotenv.config();
 const app = express();
@@ -30,6 +38,14 @@ app.use('/api', caregoryRoutes);
 app.use('/api', productRoutes);
 app.use('/api', usersRoutes);
 app.use('/api', cartRoutes);
+app.use('/api', wishListRoutes);
+app.use('/api', orderListRoutes);
+app.use('/api', productVariantRoutes);
+app.use('/api', wareHouseRoutes);
+app.use('/api', supplierRoutes);
+app.use('/api', purchaseOrderRouted);
+app.use('/api', notifyRouted);
+app.use('/api', deliveryAddressRoutes);
 
 // Start the server
 const PORT = process.env.PORT || 5000;

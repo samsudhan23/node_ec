@@ -6,6 +6,7 @@ const Orders = require('../model/placeOrderModel');
 router.post("/post/order", async (req, res) => {
     try {
         const newOrders = new Orders(req.body);
+        console.log('newOrders: ', newOrders);
         await newOrders.save();
         return res.status(200).json({ message: 'Order placed successfully', code: 200, success: true, result: newOrders })
     }
@@ -15,7 +16,7 @@ router.post("/post/order", async (req, res) => {
 })
 
 // Get Orders (for users)
-router.get("/get/orderByUser/:id", async (req, res) => {
+router.get("/getById/orderByUser/:id", async (req, res) => {
     const orderId = res.params.id;
     try {
         const orderListById = await Orders.findById(orderId);
@@ -45,7 +46,7 @@ router.delete("/delete/cancelOrder/:id", async (req, res) => {
     const orderId = res.params.id;
     try {
         const cancelOrder = await Orders.findById(orderId)
-        if (!cancelOrder) {
+        if (!cancelOrder || cancelOrder.length === 0) {
             return res.status(404).json({ message: "Order doesn't exists", success: false, result: [] })
         }
         await Orders.findByIdAndDelete(orderId)
@@ -56,16 +57,18 @@ router.delete("/delete/cancelOrder/:id", async (req, res) => {
     }
 })
 
-// router.put("/update/order/:id", async (req, res) => {
-//     const { orderStatus } = req.body;
-//     const { orderId } = req.params.id;
-//     try {
-//      const order = await Orders.findById(orderId);
-//      if(!order){
-//         res.status()
-//      }
-//     }
-//     catch (error) {
-//         res.status(500).res.json({ message: 'Server Error', success: false })
-//     }
-// })
+router.put("/update/order/:id", async (req, res) => {
+    const { orderStatus } = req.body;
+    const { orderId } = req.params.id;
+    try {
+        const order = await Orders.findById(orderId);
+        if (!order) {
+            res.status()
+        }
+    }
+    catch (error) {
+        res.status(500).res.json({ message: 'Server Error', success: false })
+    }
+})
+
+module.exports = router;
